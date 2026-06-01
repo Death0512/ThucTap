@@ -1,0 +1,49 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# BIRDY-EDWARDS — docker-compose.yml
+# Works on: Linux, Windows (Docker Desktop), Mac
+# Uses OpenCode's configured LLM provider for AI analysis
+# ══════════════════════════════════════════════════════════════════════════════
+
+
+services:
+  birdy-edwards:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: birdy-edwards
+    restart: unless-stopped
+
+    ports:
+      - "5000:5000"
+
+    volumes:
+      - ./app/fb_cookies.json:/app/fb_cookies.json
+      - ./app/socmint.db:/app/socmint.db
+      - ./app/socmint_manual.db:/app/socmint_manual.db
+      - ./app/reports:/app/reports
+      - ./app/face_data:/app/face_data
+      - ./app/post_screenshots:/app/post_screenshots
+      - ./app/status:/app/status
+
+      # Mount OpenCode config + auth for LLM provider credentials
+      - ~/.config/opencode/config.json:/root/.config/opencode/config.json:ro
+      - ~/.local/share/opencode/auth.json:/root/.local/share/opencode/auth.json:ro
+
+    environment:
+      - FLASK_ENV=production
+      - FLASK_HOST=0.0.0.0
+      - FLASK_PORT=5000
+
+    deploy:
+      resources:
+        limits:
+          memory: 6G
+        reservations:
+          memory: 2G
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
