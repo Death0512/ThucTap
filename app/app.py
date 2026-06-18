@@ -34,7 +34,7 @@ def system_check():
     app.config['COOKIES_OK'] = os.path.exists(os.path.join(BASE_DIR, 'fb_cookies.json'))
 
     print(f"\n{'═'*60}")
-    print(f"  BIRDY-EDWARDS — System Check")
+    print(f"  Crawling Bot — System Check")
     print(f"{'═'*60}")
     print(f"  LLM API  : {' Connected' if llm_ok else ' Not reachable'}")
     print(f"  Model    : {llm_client.LLM_MODEL}")
@@ -59,7 +59,7 @@ def check_cookies_valid():
 
     try:
         import pw_utils
-        from playwright.sync_api import sync_playwright
+        from scrapling_session import FBSession
 
         cookies = pw_utils.load_cookies(cookie_path)
         if not cookies:
@@ -70,11 +70,9 @@ def check_cookies_valid():
         if 'c_user' not in names:
             return False, 'Missing c_user cookie — re-import from Facebook'
 
-        with sync_playwright() as pw:
-            browser, context = pw_utils.launch_browser(pw, headless=True)
-            page = context.new_page()
-            pw_utils.inject_cookies(context, cookies)
-
+        # Scrapling stealth context with cookies injected; verify_login=False
+        # because we do our own single navigation + checks below.
+        with FBSession(cookie_file=cookie_path, headless=True, verify_login=False) as page:
             page.goto('https://www.facebook.com', wait_until='domcontentloaded', timeout=20000)
             page.wait_for_timeout(4000)
 
@@ -87,8 +85,6 @@ def check_cookies_valid():
                 page.screenshot(path=proof_path)
             except Exception:
                 pass
-
-            browser.close()
 
         if 'login' in current_url or 'checkpoint' in current_url:
             return False, 'Session expired — redirected to login page'
@@ -1996,12 +1992,13 @@ def start_cookie_refresh():
         try:
             import time as _time
             import json as _json
-            from playwright.sync_api import sync_playwright
-            import pw_utils
+            from scrapling_session import FBSession
 
-            with sync_playwright() as pw:
-                browser, context = pw_utils.launch_browser(pw, headless=False)
-                page = context.new_page()
+            # Fresh manual login in a stealth headful context (no cookies loaded).
+            session = FBSession(headless=False, verify_login=False,
+                                load_cookies_from_file=False)
+            page = session.__enter__()
+            try:
                 page.goto("https://www.facebook.com", wait_until="domcontentloaded", timeout=20000)
 
                 # Give user 60 seconds to log in manually
@@ -2009,8 +2006,9 @@ def start_cookie_refresh():
                     cookie_refresh_status['seconds_left'] = i
                     _time.sleep(1)
 
-                pw_cookies = context.cookies()
-                browser.close()
+                pw_cookies = session.context.cookies()
+            finally:
+                session.__exit__(None, None, None)
 
             cookie_path = os.path.join(BASE_DIR, 'fb_cookies.json')
             with open(cookie_path, 'w', encoding='utf-8') as _f:

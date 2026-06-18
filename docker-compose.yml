@@ -1,16 +1,16 @@
 # ══════════════════════════════════════════════════════════════════════════════
-# BIRDY-EDWARDS — docker-compose.yml
+# Crawling Bot — docker-compose.yml
 # Works on: Linux, Windows (Docker Desktop), Mac
 # Uses OpenCode's configured LLM provider for AI analysis
 # ══════════════════════════════════════════════════════════════════════════════
 
 
 services:
-  birdy-edwards:
+  crawling-bot:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: birdy-edwards
+    container_name: crawling-bot
     restart: unless-stopped
 
     ports:

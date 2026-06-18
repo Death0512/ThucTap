@@ -5,9 +5,9 @@ Replaces fb_reels_sb.py (SeleniumBase).
 
 import json
 import os
-from playwright.sync_api import sync_playwright
 
 import pw_utils
+from scrapling_session import FBSession
 
 COOKIE_FILE = "fb_cookies.json"
 OUTPUT_FILE = "fb_reels.json"
@@ -171,11 +171,7 @@ def main(profile_url: str = "", max_reels: int = 10):
 
     results: list[dict] = []
 
-    with sync_playwright() as pw:
-        browser, context = pw_utils.launch_browser(pw, headless=True)
-        page = context.new_page()
-        pw_utils.login(page, COOKIE_FILE)
-
+    with FBSession(cookie_file=COOKIE_FILE, headless=True) as page:
         reel_links = phase1_collect_reels(page, profile_url, max_reels)
 
         print(f"\n\n{'═'*65}")
@@ -190,8 +186,6 @@ def main(profile_url: str = "", max_reels: int = 10):
                 print(f"    Error on reel {i}: {e}")
                 results.append({"reel_url": reel_url, "comments": [], "error": str(e)})
             page.wait_for_timeout(2000)
-
-        browser.close()
 
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         json.dump(results, f, ensure_ascii=False, indent=2)

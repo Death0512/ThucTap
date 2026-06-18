@@ -1,59 +1,24 @@
 """
-pw_utils.py — Shared Playwright utilities for BIRDY-EDWARDS scrapers.
+pw_utils.py — Shared GraphQL/DOM extraction utilities for Crawling Bot scrapers.
 
-Every scraper imports this module for:
-  - Browser launch (Chromium, headless, stealth headers)
-  - Cookie load/save (fb_cookies.json format)
-  - Facebook login via cookies
+Browser acquisition (stealth context + cookie auth) now lives in
+`scrapling_session.FBSession`. This module keeps the extraction layer:
+  - Cookie loading (fb_cookies.json format)
   - GraphQL response interception with retry
   - Common GraphQL payload parsers (comments, posts, photos, reels, about)
+  - DOM fallback scrapers + scroll / expand helpers
+All of these operate on a Playwright `page` (supplied by FBSession) or on
+already-captured JSON, so they are independent of how the browser is launched.
 """
 
 import json
 import time
 import re
 import os
-from typing import Any
 
-from playwright.sync_api import sync_playwright, Page, BrowserContext, Response
+from playwright.sync_api import Page, Response
 
 COOKIE_FILE = "fb_cookies.json"
-
-# ── Browser launch ────────────────────────────────────────────────────────────
-
-def launch_browser(playwright, headless: bool = True):
-    """Launch Chromium with realistic stealth args."""
-    browser = playwright.chromium.launch(
-        headless=headless,
-        args=[
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-            "--disable-blink-features=AutomationControlled",
-            "--disable-infobars",
-            "--disable-dev-shm-usage",
-            "--disable-gpu",
-            "--window-size=1280,900",
-        ]
-    )
-    context = browser.new_context(
-        viewport={"width": 1280, "height": 900},
-        user_agent=(
-            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-            "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-        ),
-        locale="en-US",
-        timezone_id="America/New_York",
-        extra_http_headers={
-            "Accept-Language": "en-US,en;q=0.9",
-        }
-    )
-    # Mask navigator.webdriver
-    context.add_init_script("""
-        Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
-        Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3] });
-    """)
-    return browser, context
-
 
 # ── Cookie helpers ────────────────────────────────────────────────────────────
 
@@ -61,41 +26,6 @@ def load_cookies(cookie_file: str = COOKIE_FILE) -> list[dict]:
     """Load cookies from fb_cookies.json (Playwright/Cookie-Editor JSON format)."""
     with open(cookie_file, "r", encoding="utf-8") as f:
         return json.load(f)
-
-
-def inject_cookies(context: BrowserContext, cookies: list[dict]):
-    """Inject cookie list into Playwright context."""
-    pw_cookies = []
-    for c in cookies:
-        entry: dict[str, Any] = {
-            "name":   c.get("name", ""),
-            "value":  c.get("value", ""),
-            "domain": c.get("domain", ".facebook.com"),
-            "path":   c.get("path", "/"),
-        }
-        if c.get("expires") and c["expires"] != -1:
-            entry["expires"] = float(c["expires"])
-        if "httpOnly" in c:
-            entry["httpOnly"] = bool(c["httpOnly"])
-        if "secure" in c:
-            entry["secure"] = bool(c["secure"])
-        sameSite = c.get("sameSite", "Lax")
-        if sameSite not in ("Strict", "Lax", "None"):
-            sameSite = "Lax"
-        entry["sameSite"] = sameSite
-        pw_cookies.append(entry)
-    context.add_cookies(pw_cookies)
-
-
-def login(page: Page, cookie_file: str = COOKIE_FILE):
-    """Navigate to Facebook, inject cookies, verify login."""
-    cookies = load_cookies(cookie_file)
-    inject_cookies(page.context, cookies)
-    page.goto("https://www.facebook.com", wait_until="domcontentloaded", timeout=30000)
-    page.wait_for_timeout(3000)
-    page.reload(wait_until="domcontentloaded")
-    page.wait_for_timeout(4000)
-    print("    [auth] cookies injected")
 
 
 # ── GraphQL interception ──────────────────────────────────────────────────────

@@ -6,9 +6,9 @@ Replaces fb_photos_sb.py (SeleniumBase).
 import json
 import os
 import re
-from playwright.sync_api import sync_playwright
 
 import pw_utils
+from scrapling_session import FBSession
 
 COOKIE_FILE = "fb_cookies.json"
 OUTPUT_FILE = "fb_photos.json"
@@ -239,11 +239,7 @@ def main(profile_url: str = "", max_photos: int = 12):
 
     results: list[dict] = []
 
-    with sync_playwright() as pw:
-        browser, context = pw_utils.launch_browser(pw, headless=True)
-        page = context.new_page()
-        pw_utils.login(page, COOKIE_FILE)
-
+    with FBSession(cookie_file=COOKIE_FILE, headless=True) as page:
         all_photos  = phase1_collect_photos(page, profile_url, max_photos)
         post_photos = [p for p in all_photos if p["type"] == "post_photo"]
 
@@ -262,8 +258,6 @@ def main(profile_url: str = "", max_photos: int = 12):
                     "image_src": None, "caption": None, "comments": [], "error": str(e)
                 })
             page.wait_for_timeout(2000)
-
-        browser.close()
 
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         json.dump(results, f, ensure_ascii=False, indent=2)

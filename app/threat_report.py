@@ -166,7 +166,7 @@ def on_page(c, doc):
     c.rect(0, 0, W, 24, fill=1, stroke=0)   # footer bg
     c.setFillColor(C_SUBTEXT)
     c.setFont('Helvetica', 9)
-    c.drawString(2*cm, 8, "BIRDY-EDWARDS  |  Infiltrate & Expose  |  CONFIDENTIAL")
+    c.drawString(2*cm, 8, "Crawling Bot  |  Facebook OSINT Platform  |  CONFIDENTIAL")
     c.drawRightString(W - 2*cm, 8, f"Page {doc.page}")
     c.restoreState()
 
@@ -791,7 +791,7 @@ def build_cover(data, S):
         except: pass
 
     story.append(Spacer(1, 0.6*cm))
-    story.append(Paragraph("BIRDY-EDWARDS", S['cover_title']))
+    story.append(Paragraph("Crawling Bot", S['cover_title']))
     story.append(HRFlowable(width='65%', thickness=2.5, color=C_ACCENT, spaceAfter=14, spaceBefore=4))
     story.append(Paragraph(
         '"The truth is never buried deep enough<br/>to escape the right set of eyes."',
@@ -1524,7 +1524,7 @@ def build_face_intelligence(data, S):
 
 def generate_report(profile_url=None, batch_id=None):
     os.makedirs(REPORTS_DIR, exist_ok=True)
-    print(f"\n{'═'*65}\n📄  Birdy-Edwards — Report Generator\n{'═'*65}")
+    print(f"\n{'═'*65}\n📄  Crawling Bot — Report Generator\n{'═'*65}")
 
     if profile_url:
         print(f"  Profile : {profile_url}")
@@ -1582,7 +1582,7 @@ def generate_report(profile_url=None, batch_id=None):
 
 
 if __name__ == "__main__":
-    print("Birdy-Edwards — SOCMINT Report Generator\n1 → Automated profile\n2 → Manual batch")
+    print("Crawling Bot — Facebook OSINT Report Generator\n1 → Automated profile\n2 → Manual batch")
     choice = input("Choice: ").strip()
     if choice == "1":
         generate_report(profile_url=input("Enter profile URL: ").strip())

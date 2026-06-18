@@ -1,23 +1,23 @@
 <div align="center">
 
-<img src="app/icons/logo.jpeg" alt="BIRDY-EDWARDS Logo" width="300"/>
+<img src="app/icons/logo.jpeg" alt="Crawling Bot Logo" width="300"/>
 
-# BIRDY-EDWARDS
+# Crawling Bot
 
-### *Infiltrate & Expose*
+### *Facebook OSINT Platform*
 
 [![Python](https://img.shields.io/badge/Python-3.12-blue?style=flat-square&logo=python)](https://python.org)
 [![Flask](https://img.shields.io/badge/Flask-Web%20UI-black?style=flat-square&logo=flask)](https://flask.palletsprojects.com)
-[![Ollama](https://img.shields.io/badge/Ollama-Local%20LLM-orange?style=flat-square)](https://ollama.com)
+[![Scrapling](https://img.shields.io/badge/Scrapling-Powered-red?style=flat-square)](https://github.com/D4Vinci/Scrapling)
 [![Docker](https://img.shields.io/badge/Docker-Supported-2496ED?style=flat-square&logo=docker)](https://docker.com)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)]()
 [![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20Windows-lightgrey?style=flat-square)]()
 
-**AI-powered Facebook SOCMINT platform — 100% local, zero cloud dependency. For lite version check this repo [click here](https://github.com/jeet-ganguly/birdy-edwards-lite)**
+**AI-powered Facebook OSINT platform — 100% local, zero cloud dependency.**
 
-[Installation](#installation) · [Troubleshooting](#troubleshooting) · [Disclaimer](#️-disclaimer) . [Contributing](#contributing)
+[Installation](#installation) · [Troubleshooting](#troubleshooting) · [Disclaimer](#️-disclaimer)
 
-<img src="app/icons/demo.png" alt="BIRDY-EDWARDS Web UI" width="100%"/>
+<img src="app/icons/demo.png" alt="Crawling Bot Web UI" width="100%"/>
 
 </div>
 
@@ -25,39 +25,70 @@
 
 ## Architecture
 
-<div align="center">
-<img src="app/icons/workflow.png" alt="BIRDY-EDWARDS Pipeline" width="100%"/>
-</div>
+Crawling Bot uses a **hybrid acquisition layer** — Scrapling provides the browser stealth context, fingerprint spoofing, and session persistence, while a thin Playwright bridge intercepts Facebook's native **GraphQL JSON responses** for structured data extraction. This gives you both undetectable browsing *and* access to Facebook's own internal data format (no fragile HTML parsing for primary content).
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Flask Web UI                          │
+│          (dashboard, reports, investigation mgmt)         │
+└─────────────────────┬───────────────────────────────────┘
+                      │
+┌─────────────────────▼───────────────────────────────────┐
+│             5-Phase Pipeline Runner                      │
+│                                                          │
+│  Phase 1 ─► Data Gathering     (Scrapling + Playwright)  │
+│  Phase 2 ─► DB Import          (SQLite)                  │
+│  Phase 3 ─► AI Analysis        (NVIDIA NIM / Ollama)     │
+│  Phase 4 ─► Intelligence       (scoring, country, graph) │
+│  Phase 5 ─► Report             (PDF generation)          │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Browser Acquisition Layer
+
+```
+┌──────────────────────────────────────────────────────┐
+│  scrapling_session.FBSession                          │
+│                                                       │
+│  ╔══════════════════════════════════════════════════╗ │
+│  ║  Scrapling DynamicSession                       ║ │
+│  ║  • persistent stealth Chromium context           ║ │
+│  ║  • real user-agent generation / fingerprinting   ║ │
+│  ║  • navigator.webdriver / automation masking      ║ │
+│  ║  • Facebook cookie injection for auth             ║ │
+│  ╚══════════════════════════════════════════════════╝ │
+│                         │                              │
+│                         ▼                              │
+│  ┌─────────────────────────────────────────────────┐  │
+│  │  Raw Playwright Page (context.new_page())        │  │
+│  │  • page.on("response") → GraphQL JSON capture    │  │
+│  │  • page.evaluate() → DOM clicks / expansion     │  │
+│  │  • page.goto / page.screenshot / scrolling        │  │
+│  └─────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────┘
+```
+
+The key insight: Facebook loads content via **GraphQL API calls**, not HTML. Crawling Bot intercepts these network responses (structured JSON) via Playwright's `page.on("response")` and walks the JSON tree to extract posts, comments, photos, reels, and profile fields. DOM parsing is only used as a fallback. This makes extraction far more reliable than HTML selector-based scraping.
 
 ---
 
 ## Features
 
-- 🔍 **Profile collection** — Automated data gathering of posts, photos, reels, about data also comments, commentors profile link and name
-- 🧠 **Interaction intelligence** — AI sentiment, stance, emotion, and language analysis per interaction
+- 🔍 **Profile collection** — Automated data gathering of posts, photos, reels, about info, comments, and commentor profiles via GraphQL interception
+- 🧠 **Interaction intelligence** — AI sentiment, stance, emotion, and language analysis per comment
 - 📊 **Actor scoring** — Weighted composite score with 5-tier classification system
 - 🌍 **Country detection** — LLM identifies country of origin from profile signals
-- 👤 **Face intelligence** — Face detection, 128D encoding, and identity clustering across all images. It uses HOG model.
-- 🕸️ **Network graphs** — Interactive HTML graphs including force-directed and co-interactors relationship matrix
-- 📄 **PDF reports** — Professional intelligence report with limited ammount of charts
-- 🤖 **Local AI** — Ollama powered, gemma3:4b/12b/27b and other models(mention in web panel), runs on GPU or CPU
-- 🐳 **Docker ready** — One command deployment on Linux and Windows
-
----
-
-## Documentation
-
-Full usage guides for both investigation modes are available on the project website:
-
-- [Click Here](https://jeet-ganguly.github.io/profile/edwards.html)
-
-[![Documentation](https://img.shields.io/badge/Docs-Available-blue?style=flat-square)](https://jeet-ganguly.github.io/profile/edwards.html)
+- 👤 **Face intelligence** — Face detection, 128D encoding, and identity clustering across all images using HOG model
+- 🕸️ **Network graphs** — Interactive HTML graphs (force-directed, co-interactor relationship matrix)
+- 📄 **PDF reports** — Professional intelligence report with charts
+- 🤖 **Local AI** — Defaults to NVIDIA NIM (LLaMA 3.3 70B), also supports Ollama via model selector
+- 🐳 **Docker ready** — Single-command deployment on Linux and Windows
 
 ---
 
 ## ⚠️ Disclaimer
 
-> BIRDY-EDWARDS is developed strictly for **authorized intelligence, law enforcement, and academic research purposes only.**
+> Crawling Bot is developed strictly for **authorized intelligence, law enforcement, and academic research purposes only.**
 >
 > **Scope of data access:**
 > - This tool operates exclusively using a valid Facebook session authenticated by the operator
@@ -71,7 +102,7 @@ Full usage guides for both investigation modes are available on the project webs
 > - The developer assumes **no liability** for misuse, unauthorized data collection, or any harm caused by improper use
 > - All investigations are the **sole responsibility of the operator**
 >
-> By using BIRDY-EDWARDS, you confirm that your use is lawful, authorized, and compliant with all applicable laws in your jurisdiction.
+> By using Crawling Bot, you confirm that your use is lawful, authorized, and compliant with all applicable laws in your jurisdiction.
 
 ---
 
@@ -83,7 +114,7 @@ Full usage guides for both investigation modes are available on the project webs
 | RAM | 8 GB | 16 GB |
 | Storage | 20 GB free | 40 GB free |
 | Docker | Docker Desktop / Engine | Latest stable |
-| Ollama | Latest | Latest |
+| Ollama (optional) | Latest | Latest |
 
 ---
 
@@ -96,17 +127,16 @@ Full usage guides for both investigation modes are available on the project webs
 - **Linux:** https://docs.docker.com/engine/install/ubuntu/
 - **Windows:** https://docs.docker.com/desktop/install/windows-install/
 
-**Step 2 — Install Ollama**
+**Step 2 (optional) — Install Ollama**
 
-- **Linux:**
+Skip if using NVIDIA NIM (default) or another OpenAI-compatible provider.
+
 ```bash
 curl -fsSL https://ollama.com/install.sh | sh
 ```
-- **Windows:** Download installer from https://ollama.com/download
 
-**Step 3 — Start Ollama bound to all interfaces**
+**Step 3 (optional) — Start Ollama bound to all interfaces**
 
-- **Linux:**
 ```bash
 OLLAMA_HOST=0.0.0.0:11434 ollama serve
 ```
@@ -124,12 +154,6 @@ Environment="OLLAMA_HOST=0.0.0.0:11434"
 sudo systemctl daemon-reload && sudo systemctl restart ollama
 ```
 
-- **Windows:** Ollama listens on all interfaces by default — no extra configuration needed. If no then,
-```ps
-$env:OLLAMA_HOST="0.0.0.0"
-ollama serve
-```
-
 ---
 
 ### Quick Start
@@ -137,8 +161,8 @@ ollama serve
 **Step 1 — Clone the repository**
 
 ```bash
-git clone https://github.com/jeet-ganguly/birdy-edwards.git
-cd birdy-edwards
+git clone <your-repo-url>
+cd crawling-bot
 ```
 
 **Step 2 — Create required files and directories**
@@ -177,16 +201,17 @@ docker compose logs -f
 http://localhost:5000
 ```
 
-**Step6 - Import session cookies**
+**Step 6 — Import session cookies**
+
 ```
 http://localhost:5000/tools/import-cookies
 ```
 
 ---
 
-### Pull an AI Model
+### Pull an AI Model (for Ollama)
 
-Pull a model on your host machine:
+If using Ollama instead of NVIDIA NIM, pull a model on your host machine:
 
 ```bash
 ollama pull gemma3:4b
@@ -204,9 +229,9 @@ Or use the **AI Model panel** in the web UI — select a model and click **Apply
 
 ### Import Session Cookies
 
-BIRDY-EDWARDS requires a valid Facebook session. Use the **Cookie-Editor** browser extension — works on all platforms, no Selenium required.
+Crawling Bot requires a valid Facebook session. Use the **Cookie-Editor** browser extension.
 
-> 🔒 **Operational Security:** It is strongly recommended to use a dedicated **burner account** for investigations rather than your personal Facebook account. This protects your identity and prevents your primary account from being flagged or restricted.
+> 🔒 **Operational Security:** It is strongly recommended to use a dedicated **burner account** for investigations rather than your personal Facebook account.
 
 1. Install Cookie-Editor → [Chrome](https://chrome.google.com/webstore/detail/cookie-editor/hlkenndednhfkekhgcdicdfddnkalmdm) · [Firefox](https://addons.mozilla.org/en-US/firefox/addon/cookie-editor/)
 2. Log into your **dedicated investigation account** on Facebook
@@ -216,17 +241,21 @@ BIRDY-EDWARDS requires a valid Facebook session. Use the **Cookie-Editor** brows
 
 ---
 
-## How You Can Help
+## Hybrid Design: Scrapling + Playwright
 
-If you find BIRDY-EDWARDS useful or interesting, here are a few ways you can support the project:
+Crawling Bot's scraping layer is a deliberate hybrid that uses each library where it excels:
 
-- ⭐ **Star the repository** — it helps others discover the tool
-- 🐛 **Report bugs** — open an Issue if something isn't working
-- 🔧 **Contribute** — check the [Contributing](#contributing) section to get started
-- 📢 **Share it** — post it in OSINT communities, forums, X or with colleagues who might find it useful
-- 💬 **Give feedback** — suggestions for new features or improvements are always welcome
+| Concern | Handled by | Why |
+|---|---|---|
+| Browser launch & stealth | **Scrapling** `DynamicSession` | Real user-agent generation, fingerprint spoofing, Chromium automation masking, persistent context with cookie persistence |
+| Cookie injection & session auth | **Scrapling** (via `_initialize_context`) | Cookies injected into the persistent stealth context before any page loads |
+| GraphQL response capture | **Playwright** `page.on("response")` | Scrapling's `fetch()` opens short-lived pages; our scroll-driven loops need a persistent page with ongoing event listeners |
+| DOM interaction (clicks, expansion, scroll) | **Playwright** `page.evaluate()` | Direct JavaScript injection for Facebook's comment panel expansion, "See more" clicks, and infinite scroll |
+| HTML fallback scraping | **Scrapling** CSS/XPath selectors *(adaptable)* | For content that GraphQL doesn't cover; adaptive selectors survive DOM changes better than raw regex |
+| Screenshots | **Playwright** `page.screenshot()` | Standard Playwright API, unchanged |
+| Cookie harvesting (fresh login) | **Scrapling** `FBSession` | Clean stealth context for manual login, then harvest `context.cookies()` |
 
-Every contribution, big or small, helps build better tools for the OSINT and threat intelligence community.
+The boundary is enforced in code: `scrapling_session.FBSession` yields a plain Playwright `Page`, so every existing `page.goto()`, `page.on("response")`, `page.evaluate()` call works unchanged. The scrapers (`fb_*.py`) swapped only their `sync_playwright()...launch_browser` block for `with FBSession() as page:` — the extraction logic inside is untouched.
 
 ---
 
@@ -234,12 +263,15 @@ Every contribution, big or small, helps build better tools for the OSINT and thr
 
 **Ollama not reachable from Docker**
 ```bash
-docker exec -it birdy-edwards curl http://host.docker.internal:11434/api/tags
+docker exec -it crawling-bot curl http://host.docker.internal:11434/api/tags
 ```
 If it fails, restart Ollama with `OLLAMA_HOST=0.0.0.0:11434 ollama serve`
 
+**NVIDIA NIM not reachable**
+Ensure OpenCode config (`~/.config/opencode/config.json`) has provider settings for NVIDIA, or set `LLM_BASE_URL` and `LLM_API_KEY` environment variables.
+
 **DB error: no such table or other DB related error**  
-Start a new investigation — schema is created automatically on first use. If you stop process/program during analysis delete that investigation and then start new investigation. 
+Start a new investigation — schema is created automatically on first use. If you stop the process during analysis, delete that investigation and start a new one.
 
 **Cookies expired**  
 Go to `http://localhost:5000/tools/import-cookies` and re-import fresh cookies.
@@ -275,27 +307,13 @@ Contributions are welcome. Please follow these guidelines to keep the project cl
 - Follow existing code style — Python 3.12, Flask conventions
 - Test your changes locally via Docker before submitting
 - Do not commit `fb_cookies.json`, databases, or any scraped data
-- Keep scraper changes minimal — Facebook DOM changes frequently
-
-**What we welcome**
-- Bug fixes and stability improvements
-- New Ollama model support
-- UI improvements
-- Documentation improvements
-- Additional language support for OCR and comment analysis
-
-**What we do not accept**
-- Features that bypass platform security controls
-- Changes that introduce cloud dependencies
-- Code that stores or transmits investigation data externally
 
 ---
 
 ## Acknowledgements
 
-- Inspired by [Sherlock](https://github.com/sherlock-project/sherlock)
-- Inspired by the OSINT and threat intelligence research community
-- [SeleniumBase](https://github.com/seleniumbase/SeleniumBase) — Undetected Chrome automation
+- [Scrapling](https://github.com/D4Vinci/Scrapling) — Adaptive web scraping framework (stealth context, session management)
+- [Playwright](https://playwright.dev/python/) — Browser automation and GraphQL interception
 - [Ollama](https://ollama.com) — Local LLM inference engine
 - [face_recognition](https://github.com/ageitgey/face_recognition) — Face detection and encoding library
 - [pyvis](https://github.com/WestHealth/pyvis) — Interactive network graph visualization
@@ -306,6 +324,6 @@ Contributions are welcome. Please follow these guidelines to keep the project cl
 
 <div align="center">
 
-**BIRDY-EDWARDS** · Infiltrate & Expose ·
+**Crawling Bot** · Facebook OSINT Platform ·
 
 </div>

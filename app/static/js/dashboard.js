@@ -1,4 +1,4 @@
-// BIRDY-EDWARDS — dashboard.js
+// Crawling Bot — dashboard.js
 // Shared utilities loaded on every page
 
 // Dismiss any lifted card when overlay clicked

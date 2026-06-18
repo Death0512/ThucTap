@@ -175,16 +175,13 @@ def _scrape_single_profile(args):
         return fields
 
     try:
-        from playwright.sync_api import sync_playwright
         import pw_utils as _pw
+        from scrapling_session import FBSession
 
         all_fields = {}
 
-        with sync_playwright() as pw:
-            browser, context = _pw.launch_browser(pw, headless=True)
-            page = context.new_page()
+        with FBSession(cookie_file=cookie_file, headless=True) as page:
             page.set_default_navigation_timeout(15000)
-            _pw.login(page, cookie_file)
 
             for section in sections:
                 url = get_section_url(purl, section)
@@ -214,8 +211,6 @@ def _scrape_single_profile(args):
                         all_fields.update(fields)
                 except Exception:
                     print(f"      Skipped slow section: {section}")
-
-            browser.close()
 
         current_city = all_fields.get('current_city')
         hometown     = all_fields.get('hometown')

@@ -439,16 +439,12 @@ def scrape_about_for_profile(profile_url):
         return results
 
     try:
-        from playwright.sync_api import sync_playwright
         import pw_utils as _pw
+        from scrapling_session import FBSession
 
         sections_data = {}
 
-        with sync_playwright() as pw:
-            browser, context = _pw.launch_browser(pw, headless=True)
-            page = context.new_page()
-            _pw.login(page, COOKIE_FILE)
-
+        with FBSession(cookie_file=COOKIE_FILE, headless=True) as page:
             for section in DIRECTORY_SECTIONS:
                 url = get_directory_url(profile_url, section)
                 try:
@@ -481,8 +477,6 @@ def scrape_about_for_profile(profile_url):
                         ]
                 except Exception as e:
                     print(f"        Section {section} error: {e}")
-
-            browser.close()
 
         return sections_data
 

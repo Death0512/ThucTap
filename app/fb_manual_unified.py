@@ -8,9 +8,9 @@ import json
 import os
 import re
 from urllib.parse import urlparse, urlencode, parse_qs
-from playwright.sync_api import sync_playwright
 
 import pw_utils
+from scrapling_session import FBSession
 
 COOKIE_FILE = "fb_cookies.json"
 OUTPUT_FILE = "fb_manual_scrape.json"
@@ -330,11 +330,7 @@ def main(MAX_URLS: int = MAX_URLS, urls: list[str] | None = None):
 
     results: list[dict] = []
 
-    with sync_playwright() as pw:
-        browser, context = pw_utils.launch_browser(pw, headless=True)
-        page = context.new_page()
-        pw_utils.login(page, COOKIE_FILE)
-
+    with FBSession(cookie_file=COOKIE_FILE, headless=True) as page:
         print(f"\n\n{'═'*65}")
         print(f"Scraping {len(url_items)} URL(s)")
         print("═" * 65)
@@ -350,8 +346,6 @@ def main(MAX_URLS: int = MAX_URLS, urls: list[str] | None = None):
                 print(f"    Error: {e}")
                 results.append({"url": url, "type": url_type, "error": str(e)})
             page.wait_for_timeout(2000)
-
-        browser.close()
 
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         json.dump(results, f, ensure_ascii=False, indent=2)

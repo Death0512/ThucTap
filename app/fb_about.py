@@ -6,9 +6,9 @@ Replaces fb_about_sb.py (SeleniumBase).
 import json
 import re
 import os
-from playwright.sync_api import sync_playwright
 
 import pw_utils
+from scrapling_session import FBSession
 
 COOKIE_FILE  = "fb_cookies.json"
 OUTPUT_FILE  = "fb_about.json"
@@ -161,12 +161,7 @@ def main(profile_url: str = ""):
     owner_name: str | None = None
     is_locked              = False
 
-    with sync_playwright() as pw:
-        browser, context = pw_utils.launch_browser(pw, headless=True)
-        page = context.new_page()
-
-        pw_utils.login(page, COOKIE_FILE)
-
+    with FBSession(cookie_file=COOKIE_FILE, headless=True) as page:
         # Step 1 — Profile page: owner name + locked check
         print(f"\n   Checking profile...")
         page.goto(profile_url, wait_until="domcontentloaded", timeout=30000)
@@ -249,8 +244,6 @@ def main(profile_url: str = ""):
                 all_fields.extend(gql_fields)
             else:
                 print(f"     No data found")
-
-        browser.close()
 
     # Build output
     output: dict = {

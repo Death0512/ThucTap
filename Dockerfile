@@ -1,5 +1,5 @@
 # ══════════════════════════════════════════════════════════════════════════════
-# BIRDY-EDWARDS — Dockerfile
+# Crawling Bot — Dockerfile
 # Base: Ubuntu 24.04 LTS
 # Python: 3.12
 # Browser: Playwright Chromium (replaces SeleniumBase + Brave)
@@ -11,8 +11,7 @@ FROM ubuntu:24.04
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=UTC
 
-LABEL maintainer="Jeet Ganguly"
-LABEL description="BIRDY-EDWARDS Facebook SOCMINT Platform"
+LABEL description="Crawling Bot — Facebook OSINT Platform"
 LABEL version="2.0"
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -92,6 +91,7 @@ RUN apt-get update && apt-get install -y python3-tk && rm -rf /var/lib/apt/lists
 RUN pip install \
     flask \
     playwright \
+    "scrapling[fetchers]" \
     Pillow \
     requests \
     pytesseract \
@@ -113,6 +113,10 @@ RUN pip install \
 # playwright install-deps runs apt-get internally, so we need the cache available
 RUN apt-get update && playwright install-deps chromium && rm -rf /var/lib/apt/lists/*
 RUN playwright install chromium
+
+# Install Scrapling's fetcher browser dependencies (fingerprint / stealth deps).
+# Scrapling's DynamicSession drives the Chromium installed above.
+RUN scrapling install || true
 
 # ══════════════════════════════════════════════════════════════════════════════
 # LAYER 3 — dlib (compiled from source)

@@ -6,9 +6,9 @@ Replaces fb_posts_sb.py (SeleniumBase).
 import json
 import os
 import re
-from playwright.sync_api import sync_playwright
 
 import pw_utils
+from scrapling_session import FBSession
 
 COOKIE_FILE = "fb_cookies.json"
 OUTPUT_FILE = "fb_posts.json"
@@ -215,11 +215,7 @@ def main(profile_url: str = "", max_posts: int = 10):
 
     results: list[dict] = []
 
-    with sync_playwright() as pw:
-        browser, context = pw_utils.launch_browser(pw, headless=True)
-        page = context.new_page()
-        pw_utils.login(page, COOKIE_FILE)
-
+    with FBSession(cookie_file=COOKIE_FILE, headless=True) as page:
         post_links = phase1_collect_urls(page, profile_url, max_posts)
 
         print(f"\n\n{'═'*65}")
@@ -238,8 +234,6 @@ def main(profile_url: str = "", max_posts: int = 10):
                     "comments": [], "error": str(e)
                 })
             page.wait_for_timeout(2000)
-
-        browser.close()
 
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         json.dump(results, f, ensure_ascii=False, indent=2)

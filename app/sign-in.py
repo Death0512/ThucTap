@@ -4,18 +4,15 @@ Loads fb_cookies.json and checks if the session is still active on Facebook.
 """
 
 import json
-from playwright.sync_api import sync_playwright
-import pw_utils
+from scrapling_session import FBSession
 
 COOKIE_FILE = "fb_cookies.json"
 
-with sync_playwright() as pw:
-    browser, context = pw_utils.launch_browser(pw, headless=False)
-    page = context.new_page()
-
-    print("Loading cookies...")
-    pw_utils.login(page, COOKIE_FILE)
-
+print("Loading cookies...")
+# Stealth context + cookie injection + Facebook warm-up (verify_login=True).
+session = FBSession(cookie_file=COOKIE_FILE, headless=False, verify_login=True)
+page = session.__enter__()
+try:
     current_url = page.url
     page_source = page.content()
 
@@ -40,4 +37,5 @@ with sync_playwright() as pw:
         print(f"  {'FOUND' if found else 'not found'}: {sig}")
 
     input("\nPress Enter to close browser...")
-    browser.close()
+finally:
+    session.__exit__(None, None, None)
