@@ -1,7 +1,7 @@
 """
 fb_manual_unified.py — Manual batch URL scraper.
 Acquisition: Scrapling stealth session (FBSession) driving a Playwright page;
-data extracted from intercepted GraphQL responses, DOM as fallback.
+data extracted from intercepted GraphQL responses, adaptive DOM as fallback.
 Supports: photo, post, reel, video URLs.
 """
 
@@ -18,8 +18,6 @@ OUTPUT_FILE = "fb_manual_scrape.json"
 MIN_URLS    = 1
 MAX_URLS    = 15
 
-
-# ── URL type detection ────────────────────────────────────────────────────────
 
 def detect_url_type(url: str) -> str | None:
     if "photo.php" in url or "/photo/" in url or "/photo?" in url:
@@ -78,31 +76,6 @@ def collect_urls_from_user(max_urls: int = MAX_URLS) -> list[dict]:
     return urls
 
 
-# ── Per-type scraper functions ────────────────────────────────────────────────
-
-def _switch_to_all_comments(page):
-    page.evaluate("""() => {
-        var btns = document.querySelectorAll('div[role="button"],span[role="button"]');
-        for (var i = 0; i < btns.length; i++) {
-            var t = (btns[i].innerText||'').trim().toLowerCase();
-            if (t === 'most relevant' || t === 'newest' || t === 'all comments') {
-                btns[i].click(); return;
-            }
-        }
-    }""")
-    page.wait_for_timeout(2000)
-    page.evaluate("""() => {
-        var btns = document.querySelectorAll('div[role="menuitem"],div[role="option"],div[role="button"]');
-        for (var i = 0; i < btns.length; i++) {
-            var t = (btns[i].innerText||'').trim().toLowerCase();
-            if (t === 'all comments' || t.startsWith('all comments')) {
-                btns[i].click(); return;
-            }
-        }
-    }""")
-    page.wait_for_timeout(2000)
-
-
 def _load_and_expand_comments(page, scroll_steps: int = 25):
     for _ in range(scroll_steps):
         clicked = pw_utils.expand_comments(page)
@@ -122,7 +95,7 @@ def scrape_photo(page, url: str, idx: int, total: int) -> dict:
     def _navigate():
         page.goto(url, wait_until="domcontentloaded", timeout=30000)
         page.wait_for_timeout(6000)
-        _switch_to_all_comments(page)
+        pw_utils.switch_to_all_comments(page)
 
     responses = pw_utils.capture_graphql(page, _navigate, timeout_ms=14000, retries=3)
     comments  = pw_utils.extract_comments_from_graphql(responses)
@@ -135,30 +108,12 @@ def scrape_photo(page, url: str, idx: int, total: int) -> dict:
         if not caption and p.get("caption"):
             caption = p["caption"]
 
-    # DOM fallbacks
     if not image_src:
-        image_src = page.evaluate("""() => {
-            var imgs = document.querySelectorAll(
-                'div.x6s0dn4.x78zum5.xdt5ytf.xl56j7k.x1n2onr6 img[src*="scontent"]'
-            );
-            return imgs.length ? imgs[0].src : null;
-        }""")
+        image_src = pw_utils.get_image_src(page)
     if not date_text:
-        date_text = page.evaluate("""() => {
-            var spans = document.querySelectorAll('span[id]');
-            for (var i = 0; i < spans.length; i++) {
-                if (/^_[rR]_/.test(spans[i].id)) {
-                    var t = spans[i].innerText.trim();
-                    if (t) return t;
-                }
-            }
-            return null;
-        }""")
+        date_text = pw_utils.get_date_text(page)
     if not caption:
-        caption = page.evaluate("""() => {
-            var m = document.querySelector('[data-ad-comet-preview="message"],[data-ad-preview="message"]');
-            return m ? (m.innerText||'').trim()||null : null;
-        }""")
+        caption = pw_utils.get_caption(page)
     if not comments:
         _load_and_expand_comments(page)
         comments = pw_utils.dom_scrape_comments(page)
@@ -179,15 +134,8 @@ def scrape_post(page, url: str, idx: int, total: int) -> dict:
     def _navigate():
         page.goto(url, wait_until="domcontentloaded", timeout=30000)
         page.wait_for_timeout(6000)
-        page.evaluate("""() => {
-            var btns = document.querySelectorAll('div[role="button"],span[role="button"]');
-            for (var i = 0; i < btns.length; i++) {
-                var t = (btns[i].innerText||'').trim();
-                if (t === 'See more' || t === 'See More') { btns[i].click(); break; }
-            }
-        }""")
-        page.wait_for_timeout(1000)
-        _switch_to_all_comments(page)
+        pw_utils.click_see_more(page)
+        pw_utils.switch_to_all_comments(page)
 
     responses = pw_utils.capture_graphql(page, _navigate, timeout_ms=14000, retries=3)
     comments  = pw_utils.extract_comments_from_graphql(responses)
@@ -199,25 +147,10 @@ def scrape_post(page, url: str, idx: int, total: int) -> dict:
             caption = p["caption"]
 
     if not date_text:
-        date_text = page.evaluate("""() => {
-            var spans = document.querySelectorAll('span[id]');
-            for (var i = 0; i < spans.length; i++) {
-                if (/^_[rR]_/.test(spans[i].id)) {
-                    var t = spans[i].innerText.trim();
-                    if (t) return t;
-                }
-            }
-            return null;
-        }""")
+        date_text = pw_utils.get_date_text(page)
     if not caption:
-        caption = page.evaluate("""() => {
-            var c = document.querySelector('div.xdj266r.x14z9mp.xat24cr.x1lziwak.x1vvkbs');
-            if (c) return (c.innerText||'').trim()||null;
-            var m = document.querySelector('[data-ad-comet-preview="message"],[data-ad-preview="message"]');
-            return m ? (m.innerText||'').trim()||null : null;
-        }""")
+        caption = pw_utils.get_caption(page)
 
-    # Screenshot
     os.makedirs("post_screenshots", exist_ok=True)
     fbid = re.search(r"pfbid(\w+)|/posts/(\w+)|fbid=(\w+)", url)
     name = next((g for g in fbid.groups() if g), str(idx)) if fbid else str(idx)
@@ -246,12 +179,8 @@ def scrape_reel(page, url: str, idx: int, total: int) -> dict:
     def _navigate():
         page.goto(url, wait_until="domcontentloaded", timeout=30000)
         page.wait_for_timeout(5000)
-        page.evaluate("""() => {
-            var btns = document.querySelectorAll('[aria-label="Comment"][role="button"]');
-            if (btns.length) { btns[0].click(); return; }
-        }""")
-        page.wait_for_timeout(2000)
-        _switch_to_all_comments(page)
+        pw_utils.click_comment_icon(page)
+        pw_utils.switch_to_all_comments(page)
 
     responses = pw_utils.capture_graphql(page, _navigate, timeout_ms=12000, retries=3)
     comments  = pw_utils.extract_comments_from_graphql(responses)
@@ -272,12 +201,8 @@ def scrape_video(page, url: str, idx: int, total: int) -> dict:
     def _navigate():
         page.goto(url, wait_until="domcontentloaded", timeout=30000)
         page.wait_for_timeout(6000)
-        page.evaluate("""() => {
-            var btns = document.querySelectorAll('[aria-label="Comment"][role="button"]');
-            if (btns.length) { btns[0].click(); return; }
-        }""")
-        page.wait_for_timeout(2000)
-        _switch_to_all_comments(page)
+        pw_utils.click_comment_icon(page)
+        pw_utils.switch_to_all_comments(page)
 
     responses = pw_utils.capture_graphql(page, _navigate, timeout_ms=12000, retries=3)
     comments  = pw_utils.extract_comments_from_graphql(responses)
@@ -302,13 +227,7 @@ SCRAPERS = {
 }
 
 
-# ── Main ──────────────────────────────────────────────────────────────────────
-
 def main(MAX_URLS: int = MAX_URLS, urls: list[str] | None = None):
-    """
-    urls: optional list of URL strings (web-app mode — no input() needed).
-    If None, falls back to interactive CLI input.
-    """
     if urls is not None:
         url_items: list[dict] = []
         for raw in urls[:MAX_URLS]:

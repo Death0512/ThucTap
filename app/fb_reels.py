@@ -1,7 +1,7 @@
 """
 fb_reels.py — Facebook reel scraper.
 Acquisition: Scrapling stealth session (FBSession) driving a Playwright page;
-data extracted from intercepted GraphQL responses, DOM as fallback.
+data extracted from intercepted GraphQL responses, adaptive DOM as fallback.
 """
 
 import json
@@ -20,8 +20,6 @@ def get_reels_url(profile_url: str) -> str:
         return profile_url + "&sk=reels_tab"
     return profile_url + "/reels"
 
-
-# ── Phase 1 — collect reel URLs ───────────────────────────────────────────────
 
 def phase1_collect_reels(page, profile_url: str, max_reels: int) -> list[str]:
     print("\n" + "═" * 65)
@@ -51,7 +49,6 @@ def phase1_collect_reels(page, profile_url: str, max_reels: int) -> list[str]:
     page.wait_for_timeout(5000)
 
     while len(reel_links) < max_reels and scroll_n < MAX_SCROLLS:
-        # GraphQL extraction
         for item in pw_utils.extract_reels_from_graphql(gql_responses):
             url = item.get("reel_url", "")
             if url and url not in seen:
@@ -61,7 +58,6 @@ def phase1_collect_reels(page, profile_url: str, max_reels: int) -> list[str]:
                 if len(reel_links) >= max_reels:
                     break
 
-        # DOM fallback
         for url in pw_utils.dom_scrape_reel_links(page):
             if url not in seen:
                 seen.add(url)
@@ -83,7 +79,6 @@ def phase1_collect_reels(page, profile_url: str, max_reels: int) -> list[str]:
             no_change += 1
         else:
             no_change = 0
-
         if no_change >= 8:
             print("  No new reels for 8 scrolls — stopping")
             break
@@ -93,8 +88,6 @@ def phase1_collect_reels(page, profile_url: str, max_reels: int) -> list[str]:
     return reel_links
 
 
-# ── Phase 2 — scrape comments for each reel ───────────────────────────────────
-
 def phase2_scrape_reel(page, reel_url: str, idx: int, total: int) -> dict:
     print(f"\n  [{idx}/{total}] {reel_url}")
 
@@ -103,30 +96,8 @@ def phase2_scrape_reel(page, reel_url: str, idx: int, total: int) -> dict:
     def _navigate():
         page.goto(reel_url, wait_until="domcontentloaded", timeout=30000)
         page.wait_for_timeout(5000)
-        # Open comment panel
-        page.evaluate("""() => {
-            var btns = document.querySelectorAll('[aria-label="Comment"][role="button"]');
-            if (btns.length) { btns[0].click(); return true; }
-            return false;
-        }""")
-        page.wait_for_timeout(2000)
-        # Switch to All Comments
-        page.evaluate("""() => {
-            var btns = document.querySelectorAll('div[role="button"],span[role="button"]');
-            for (var i = 0; i < btns.length; i++) {
-                var t = (btns[i].innerText||'').trim().toLowerCase();
-                if (t === 'most relevant' || t === 'all comments') { btns[i].click(); return; }
-            }
-        }""")
-        page.wait_for_timeout(2000)
-        page.evaluate("""() => {
-            var btns = document.querySelectorAll('div[role="menuitem"],div[role="option"]');
-            for (var i = 0; i < btns.length; i++) {
-                var t = (btns[i].innerText||'').trim().toLowerCase();
-                if (t === 'all comments' || t.startsWith('all comments')) { btns[i].click(); return; }
-            }
-        }""")
-        page.wait_for_timeout(2000)
+        pw_utils.click_comment_icon(page)
+        pw_utils.switch_to_all_comments(page)
 
     responses = pw_utils.capture_graphql(
         page,
@@ -139,32 +110,17 @@ def phase2_scrape_reel(page, reel_url: str, idx: int, total: int) -> dict:
     comments = pw_utils.extract_comments_from_graphql(responses)
 
     if not comments:
-        # Scroll panel + DOM fallback
         for _ in range(20):
             clicked = pw_utils.expand_comments(page)
             if clicked:
                 page.wait_for_timeout(2000)
-            # Scroll the right-side comment panel
-            page.evaluate("""() => {
-                var els = document.querySelectorAll('*');
-                for (var i = 0; i < els.length; i++) {
-                    var el = els[i];
-                    var s = window.getComputedStyle(el);
-                    var r = el.getBoundingClientRect();
-                    if ((s.overflowY==='auto'||s.overflowY==='scroll') && r.left>800 && r.height>300) {
-                        el.scrollTop += 400; return;
-                    }
-                }
-                window.scrollBy(0, 400);
-            }""")
+            pw_utils.scroll_comment_panel(page)
             page.wait_for_timeout(1200)
         comments = pw_utils.dom_scrape_comments(page)
 
     print(f"    comments: {len(comments)}")
     return {"reel_url": reel_url, "comments": comments}
 
-
-# ── Main ──────────────────────────────────────────────────────────────────────
 
 def main(profile_url: str = "", max_reels: int = 10):
     if not profile_url:

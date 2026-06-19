@@ -1,7 +1,7 @@
 """
 fb_photos.py — Facebook photo scraper.
 Acquisition: Scrapling stealth session (FBSession) driving a Playwright page;
-data extracted from intercepted GraphQL responses, DOM as fallback.
+data extracted from intercepted GraphQL responses, adaptive DOM as fallback.
 """
 
 import json
@@ -22,8 +22,6 @@ def get_photos_url(profile_url: str) -> str:
     return profile_url + "/photos"
 
 
-# ── Phase 1 — collect photo page URLs ────────────────────────────────────────
-
 def phase1_collect_photos(page, profile_url: str, max_photos: int) -> list[dict]:
     print("\n" + "═" * 65)
     print("PHASE 1 — Collecting photo URLs")
@@ -42,7 +40,6 @@ def phase1_collect_photos(page, profile_url: str, max_photos: int) -> list[dict]
         page.goto(photos_url, wait_until="domcontentloaded", timeout=30000)
         page.wait_for_timeout(5000)
 
-    # Capture GraphQL responses while the /photos page loads and as we scroll
     responses: list[dict] = []
 
     def _on_response(response):
@@ -58,7 +55,6 @@ def phase1_collect_photos(page, profile_url: str, max_photos: int) -> list[dict]
     _navigate()
 
     while len(photo_links) < max_photos and scroll_n < MAX_SCROLLS:
-        # Try GraphQL first
         gql_photos = pw_utils.extract_photos_from_graphql(responses)
         for p in gql_photos:
             url = p.get("photo_url", "")
@@ -72,7 +68,6 @@ def phase1_collect_photos(page, profile_url: str, max_photos: int) -> list[dict]
                 if len(photo_links) >= max_photos:
                     break
 
-        # DOM fallback for any remaining
         dom_items = pw_utils.dom_scrape_photo_links(page)
         for item in dom_items:
             url = item.get("url", "")
@@ -85,7 +80,6 @@ def phase1_collect_photos(page, profile_url: str, max_photos: int) -> list[dict]
                     break
 
         print(f"  scroll #{scroll_n}  total: {len(photo_links)}")
-
         if len(photo_links) >= max_photos:
             break
 
@@ -98,31 +92,24 @@ def phase1_collect_photos(page, profile_url: str, max_photos: int) -> list[dict]
             no_change += 1
         else:
             no_change = 0
-
         if no_change >= 8:
             print("  No new photos for 8 scrolls — stopping")
             break
 
     page.remove_listener("response", _on_response)
-
     post_photos = [p for p in photo_links if p["type"] == "post_photo"]
     print(f"\n  post_photo={len(post_photos)} / total links={len(photo_links)}")
     return photo_links
 
 
-# ── Phase 2 — scrape each photo: image + caption + comments ──────────────────
-
 def phase2_scrape_photo(page, photo: dict, idx: int, total: int) -> dict:
     url = photo["url"]
     print(f"\n  [{idx}/{total}] {url}")
 
-    # Pre-filled from GraphQL if available
     image_src = photo.get("image_src")
     date_text = photo.get("date_text")
     caption   = photo.get("caption")
     comments: list[dict] = []
-
-    gql_responses: list[dict] = []
 
     def _navigate():
         page.goto(url, wait_until="domcontentloaded", timeout=30000)
@@ -135,14 +122,11 @@ def phase2_scrape_photo(page, photo: dict, idx: int, total: int) -> dict:
         timeout_ms=12000,
         retries=3,
     )
-    gql_responses = responses
 
-    # Extract comments from GraphQL
-    comments = pw_utils.extract_comments_from_graphql(gql_responses)
+    comments = pw_utils.extract_comments_from_graphql(responses)
 
-    # Extract image / date / caption from GraphQL if not already set
     if not image_src or not date_text:
-        gql_photos = pw_utils.extract_photos_from_graphql(gql_responses)
+        gql_photos = pw_utils.extract_photos_from_graphql(responses)
         for p in gql_photos:
             if not image_src and p.get("image_src"):
                 image_src = p["image_src"]
@@ -151,70 +135,22 @@ def phase2_scrape_photo(page, photo: dict, idx: int, total: int) -> dict:
             if not caption and p.get("caption"):
                 caption = p["caption"]
 
-    # DOM fallback for image src
     if not image_src:
-        image_src = page.evaluate("""() => {
-            var imgs = document.querySelectorAll(
-                'div.x6s0dn4.x78zum5.xdt5ytf.xl56j7k.x1n2onr6 img[src*="scontent"]'
-            );
-            return imgs.length ? imgs[0].src : null;
-        }""")
+        image_src = pw_utils.get_image_src(page)
 
-    # DOM fallback for date
     if not date_text:
-        date_text = page.evaluate("""() => {
-            var allSpans = document.querySelectorAll('span[id]');
-            for (var i = 0; i < allSpans.length; i++) {
-                if (/^_[rR]_/.test(allSpans[i].id)) {
-                    var t = allSpans[i].innerText.trim();
-                    if (t && t.length > 0) return t;
-                }
-            }
-            return null;
-        }""")
+        date_text = pw_utils.get_date_text(page)
 
-    # DOM fallback for caption
     if not caption:
-        caption = page.evaluate("""() => {
-            var msg = document.querySelector(
-                '[data-ad-comet-preview="message"],[data-ad-preview="message"]'
-            );
-            if (!msg) return null;
-            return (msg.innerText || '').trim() || null;
-        }""")
+        caption = pw_utils.get_caption(page)
 
-    # DOM fallback for comments — switch to All Comments first
     if not comments:
-        page.evaluate("""() => {
-            var btns = document.querySelectorAll('div[role="button"],span[role="button"]');
-            for (var i = 0; i < btns.length; i++) {
-                var t = (btns[i].innerText||'').trim().toLowerCase();
-                if (t === 'most relevant' || t === 'newest' || t === 'all comments') {
-                    btns[i].click(); return;
-                }
-            }
-        }""")
-        page.wait_for_timeout(2000)
-        page.evaluate("""() => {
-            var btns = document.querySelectorAll('div[role="menuitem"],div[role="button"]');
-            for (var i = 0; i < btns.length; i++) {
-                var t = (btns[i].innerText||'').trim().toLowerCase();
-                if (t === 'all comments' || t.startsWith('all comments')) {
-                    btns[i].click(); return;
-                }
-            }
-        }""")
-        page.wait_for_timeout(2000)
-
-        # Scroll + expand
+        pw_utils.switch_to_all_comments(page)
         for _ in range(20):
             clicked = pw_utils.expand_comments(page)
             if clicked:
                 page.wait_for_timeout(2000)
             pw_utils.scroll_page(page, steps=1, step_px=400, pause_ms=1200)
-            count = page.evaluate("() => document.querySelectorAll('div.x1rg5ohu').length") or 0
-            if count == 0:
-                break
 
         comments = pw_utils.dom_scrape_comments(page)
 
@@ -231,8 +167,6 @@ def phase2_scrape_photo(page, photo: dict, idx: int, total: int) -> dict:
         "comments":  comments,
     }
 
-
-# ── Main ──────────────────────────────────────────────────────────────────────
 
 def main(profile_url: str = "", max_photos: int = 12):
     if not profile_url:

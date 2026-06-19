@@ -1,19 +1,18 @@
 """
 pw_utils.py — Shared GraphQL/DOM extraction utilities for Crawling Bot scrapers.
 
-Browser acquisition (stealth context + cookie auth) now lives in
+Browser acquisition (stealth context + cookie auth) lives in
 `scrapling_session.FBSession`. This module keeps the extraction layer:
   - Cookie loading (fb_cookies.json format)
   - GraphQL response interception with retry
   - Common GraphQL payload parsers (comments, posts, photos, reels, about)
-  - DOM fallback scrapers + scroll / expand helpers
-All of these operate on a Playwright `page` (supplied by FBSession) or on
-already-captured JSON, so they are independent of how the browser is launched.
+  - Adaptive DOM helpers — text/role-based, survives FB class churn
+All operate on a Playwright `page` (supplied by FBSession) or already-captured JSON.
 """
 
 import json
-import time
 import re
+import time
 import os
 
 from playwright.sync_api import Page, Response
@@ -30,7 +29,6 @@ def load_cookies(cookie_file: str = COOKIE_FILE) -> list[dict]:
 
 # ── GraphQL interception ──────────────────────────────────────────────────────
 
-# Facebook GraphQL endpoint patterns
 _GQL_PATTERNS = (
     "/api/graphql/",
     "/graphql/",
@@ -49,19 +47,7 @@ def capture_graphql(
     retries: int = 3,
 ) -> list[dict]:
     """
-    Execute trigger_fn (navigation / click / scroll) then collect all GraphQL
-    JSON responses that pass filter_fn (optional callable(body_dict) -> bool).
-
-    Args:
-        page:          active Playwright page
-        trigger_fn:    callable() — runs the action that causes GraphQL traffic
-        filter_fn:     optional callable(dict) -> bool to keep only relevant responses
-        max_responses: stop after N matching responses (0 = collect all until timeout)
-        timeout_ms:    how long to wait for responses after trigger
-        retries:       how many times to retry if no responses captured
-
-    Returns:
-        list of parsed JSON body dicts from matching GraphQL responses
+    Execute trigger_fn then collect all GraphQL JSON responses that pass filter_fn.
     """
     for attempt in range(1, retries + 1):
         captured: list[dict] = []
@@ -74,7 +60,6 @@ def capture_graphql(
             except Exception:
                 try:
                     text = response.text()
-                    # FB sometimes sends multiple JSON objects separated by newlines
                     for line in text.splitlines():
                         line = line.strip()
                         if line:
@@ -93,7 +78,6 @@ def capture_graphql(
         page.on("response", _on_response)
         try:
             trigger_fn()
-            # Wait for responses to arrive
             deadline = time.monotonic() + timeout_ms / 1000
             while time.monotonic() < deadline:
                 if max_responses and len(captured) >= max_responses:
@@ -128,19 +112,9 @@ def _walk(obj, visitor):
 
 
 def extract_comments_from_graphql(responses: list[dict]) -> list[dict]:
-    """
-    Parse GraphQL responses and extract top-level comment objects.
-    Returns list of {name, profile_url, comment_text}.
-    """
     seen: dict[str, dict] = {}
-
     for resp in responses:
         def visit(node: dict):
-            # Comment nodes have message.text + author.name + author.url
-            if "feedback" in node or "comment" not in str(node).lower():
-                pass
-
-            # Pattern 1: comment node with author + body
             author = node.get("author") or node.get("commenter")
             body   = node.get("body") or node.get("message")
             if author and body:
@@ -153,8 +127,6 @@ def extract_comments_from_graphql(responses: list[dict]) -> list[dict]:
                         "profile_url":  url,
                         "comment_text": text or "[Non-text comment]",
                     }
-
-            # Pattern 2: node.node with actor
             inner = node.get("node", {})
             if isinstance(inner, dict):
                 actor  = inner.get("author") or inner.get("actor")
@@ -169,24 +141,16 @@ def extract_comments_from_graphql(responses: list[dict]) -> list[dict]:
                             "profile_url":  url,
                             "comment_text": text or "[Non-text comment]",
                         }
-
         _walk(resp, visit)
-
     return list(seen.values())
 
 
 def extract_posts_from_graphql(responses: list[dict]) -> list[dict]:
-    """
-    Parse GraphQL responses for post timeline entries.
-    Returns list of {post_url, date_text, caption}.
-    """
     seen: set[str] = set()
     posts: list[dict] = []
-
     for resp in responses:
         def visit(node: dict):
             url = None
-            # Story / post_url fields
             for key in ("url", "story_url", "post_url"):
                 v = node.get(key, "")
                 if v and "facebook.com" in v and (
@@ -197,8 +161,6 @@ def extract_posts_from_graphql(responses: list[dict]) -> list[dict]:
             if not url or url in seen:
                 return
             seen.add(url)
-
-            # Date
             creation_time = node.get("creation_time") or node.get("publish_time")
             date_text = None
             if creation_time:
@@ -208,44 +170,30 @@ def extract_posts_from_graphql(responses: list[dict]) -> list[dict]:
                     date_text = dt.strftime("%-d %B %Y")
                 except Exception:
                     pass
-
-            # Caption / message
             msg = node.get("message") or node.get("body")
             caption = None
             if isinstance(msg, dict):
                 caption = msg.get("text")
             elif isinstance(msg, str):
                 caption = msg
-
             posts.append({
                 "post_url":  url,
                 "date_text": date_text,
                 "caption":   caption,
             })
-
         _walk(resp, visit)
-
     return posts
 
 
 def extract_photos_from_graphql(responses: list[dict]) -> list[dict]:
-    """
-    Parse GraphQL responses for photo nodes.
-    Returns list of {photo_url, image_src, date_text, caption}.
-    """
     seen: set[str] = set()
     photos: list[dict] = []
-
     for resp in responses:
         def visit(node: dict):
-            # Photo nodes have __typename == "Photo" or media_type == "photo"
             typename = node.get("__typename", "")
             if typename not in ("Photo", "ProfilePhoto") and "photo" not in typename.lower():
-                # Also check if node has photo_image key
                 if "photo_image" not in node and "image" not in node:
                     return
-
-            # URL of the photo page
             photo_url = None
             for key in ("url", "photo_url", "permalink_url"):
                 v = node.get(key, "")
@@ -255,8 +203,6 @@ def extract_photos_from_graphql(responses: list[dict]) -> list[dict]:
             if not photo_url or photo_url in seen:
                 return
             seen.add(photo_url)
-
-            # Image src — highest quality available
             image_src = None
             for key in ("photo_image", "image", "full_image", "preferred_image"):
                 img = node.get(key)
@@ -264,8 +210,6 @@ def extract_photos_from_graphql(responses: list[dict]) -> list[dict]:
                     image_src = img.get("uri") or img.get("src")
                     if image_src:
                         break
-
-            # Date
             creation_time = node.get("creation_time") or node.get("publish_time")
             date_text = None
             if creation_time:
@@ -275,42 +219,31 @@ def extract_photos_from_graphql(responses: list[dict]) -> list[dict]:
                     date_text = dt.strftime("%-d %B %Y")
                 except Exception:
                     pass
-
-            # Caption
             msg = node.get("message") or node.get("caption")
             caption = None
             if isinstance(msg, dict):
                 caption = msg.get("text")
             elif isinstance(msg, str):
                 caption = msg
-
             photos.append({
                 "photo_url": photo_url,
                 "image_src": image_src,
                 "date_text": date_text,
                 "caption":   caption,
             })
-
         _walk(resp, visit)
-
     return photos
 
 
 def extract_reels_from_graphql(responses: list[dict]) -> list[dict]:
-    """
-    Parse GraphQL responses for reel/video nodes.
-    Returns list of {reel_url}.
-    """
     seen: set[str] = set()
     reels: list[dict] = []
-
     for resp in responses:
         def visit(node: dict):
             typename = node.get("__typename", "")
             if typename not in ("Video", "Reel") and "video" not in typename.lower() \
                     and "reel" not in typename.lower():
                 return
-
             for key in ("url", "video_url", "permalink_url", "share_url"):
                 v = node.get(key, "")
                 if v and "facebook.com" in v and ("/reel/" in v or "/videos/" in v):
@@ -319,20 +252,13 @@ def extract_reels_from_graphql(responses: list[dict]) -> list[dict]:
                         seen.add(reel_url)
                         reels.append({"reel_url": reel_url})
                     return
-
         _walk(resp, visit)
-
     return reels
 
 
 def extract_about_from_graphql(responses: list[dict]) -> list[dict]:
-    """
-    Parse GraphQL responses for profile about fields.
-    Returns list of {section, field_type, label, value, sub_label}.
-    """
     fields: list[dict] = []
     seen: set[str] = set()
-
     for resp in responses:
         def visit(node: dict):
             field_type = node.get("field_type") or node.get("group_key")
@@ -358,19 +284,180 @@ def extract_about_from_graphql(responses: list[dict]) -> list[dict]:
                 "value":      text,
                 "sub_label":  None,
             })
-
         _walk(resp, visit)
-
     return fields
 
 
-# ── DOM fallback helpers ──────────────────────────────────────────────────────
+# ── Adaptive DOM helpers ──────────────────────────────────────────────────────
+# All below use Playwright text/role-based locators — survive FB class churn.
+
+def click_see_more(page: Page) -> bool:
+    """Click 'See more' to expand truncated post text."""
+    for name in ("See more", "See More"):
+        try:
+            btn = page.locator(f'[role="button"]:has-text("{name}")').first
+            if btn.count() and btn.is_visible():
+                btn.click()
+                page.wait_for_timeout(800)
+                return True
+        except Exception:
+            pass
+    return False
+
+
+def click_sort_dropdown(page: Page) -> bool:
+    """Click the comment-sort dropdown (Most Relevant / Newest / All Comments)."""
+    try:
+        btn = page.locator('[role="button"]').filter(
+            has_text=re.compile(r"most relevant|newest|all comments", re.I)
+        ).first
+        if btn.count() and btn.is_visible():
+            btn.click()
+            page.wait_for_timeout(2000)
+            return True
+    except Exception:
+        pass
+    return False
+
+
+def click_all_comments_option(page: Page) -> bool:
+    """Select 'All comments' from the opened dropdown menu."""
+    try:
+        opt = page.get_by_role("menuitem", name="All comments").first
+        if opt.count() and opt.is_visible(timeout=3000):
+            opt.click()
+            page.wait_for_timeout(2000)
+            return True
+    except Exception:
+        pass
+    try:
+        opt = page.locator('[role="menuitem"]').filter(
+            has_text=re.compile(r"all comments", re.I)
+        ).first
+        if opt.count() and opt.is_visible(timeout=3000):
+            opt.click()
+            page.wait_for_timeout(2000)
+            return True
+    except Exception:
+        pass
+    return False
+
+
+def switch_to_all_comments(page: Page):
+    """Open sort dropdown then select 'All comments'."""
+    click_sort_dropdown(page)
+    click_all_comments_option(page)
+
+
+def click_comment_icon(page: Page) -> bool:
+    """Click comment icon on a reel/video to open the comment panel."""
+    try:
+        btn = page.locator('[aria-label="Comment"][role="button"]').first
+        if btn.count() and btn.is_visible(timeout=3000):
+            btn.click()
+            page.wait_for_timeout(2000)
+            return True
+    except Exception:
+        pass
+    return False
+
+
+def expand_comments(page: Page) -> int:
+    """Click visible 'View more comments' / 'More comments' buttons."""
+    clicked = 0
+    if not hasattr(page, '_expanded_sigs'):
+        page._expanded_sigs = set()
+    try:
+        btns = page.locator('[role="button"]').filter(
+            has_text=re.compile(r"more comment", re.I)
+        )
+        for i in range(btns.count()):
+            try:
+                btn = btns.nth(i)
+                if not btn.is_visible():
+                    continue
+                box = btn.bounding_box()
+                if box is None:
+                    continue
+                key = f"{box['y']:.0f}_{box['x']:.0f}"
+                if key in page._expanded_sigs:
+                    continue
+                page._expanded_sigs.add(key)
+                btn.click()
+                clicked += 1
+                page.wait_for_timeout(600)
+            except Exception:
+                pass
+    except Exception:
+        pass
+    return clicked
+
+
+def get_caption(page: Page) -> str | None:
+    """Extract post caption using stable data-* attributes."""
+    for selector in ('[data-ad-comet-preview="message"]',
+                     '[data-ad-preview="message"]'):
+        try:
+            el = page.locator(selector).first
+            if el.count() and el.is_visible():
+                return (el.inner_text() or '').strip() or None
+        except Exception:
+            pass
+    return None
+
+
+def get_image_src(page: Page) -> str | None:
+    """Extract photo image src from scontent CDN (stable hostname)."""
+    try:
+        el = page.locator('img[src*="scontent"]').first
+        if el.count():
+            return el.get_attribute('src')
+    except Exception:
+        pass
+    return None
+
+
+def get_date_text(page: Page) -> str | None:
+    """Extract post date by matching date-pattern text in spans."""
+    date_re = re.compile(
+        r'(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|'
+        r'Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|'
+        r'Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+\d{1,4}'
+    )
+    try:
+        el = page.locator('span').filter(has_text=date_re).first
+        if el.count():
+            raw = (el.inner_text() or '').strip()
+            if raw and len(raw) >= 4:
+                return raw
+    except Exception:
+        pass
+    return None
+
 
 def dom_scrape_comments(page: Page) -> list[dict]:
-    """DOM fallback: scrape comment divs the old way."""
+    """
+    DOM fallback: scrape comment profiles using JS extraction.
+    The extraction logic (tree-walking, sticker/GIF detection, name/URL
+    parsing) is inherently JS.  We keep the known-stable container class
+    `div.x1rg5ohu` as primary (unchanged for 3+ years) with a semantic
+    fallback.
+    """
     return page.evaluate("""() => {
-        var profiles = document.querySelectorAll('div.x1rg5ohu');
         var seen = {};
+        // Primary — stable FB comment container class
+        var profiles = document.querySelectorAll('div.x1rg5ohu');
+        // Semantic fallback: any div containing a profile link
+        if (!profiles.length) {
+            var linkContainers = [];
+            var links = document.querySelectorAll('a[href*="facebook.com/"][role="link"]');
+            links.forEach(function(link) {
+                var d = link.closest('div[dir="auto"],div.x1rg5ohu,div');
+                if (d && linkContainers.indexOf(d) === -1)
+                    linkContainers.push(d);
+            });
+            profiles = linkContainers;
+        }
         profiles.forEach(function(div) {
             var parent = div.parentElement;
             var isReply = false;
@@ -381,7 +468,7 @@ def dom_scrape_comments(page: Page) -> list[dict]:
                 parent = parent.parentElement;
             }
             if (isReply) return;
-            var a = div.querySelector('a[href]');
+            var a = div.querySelector('a[href*="facebook.com"]');
             if (!a) return;
             var name = (a.innerText || '').trim();
             var raw  = a.href || '';
@@ -408,10 +495,12 @@ def dom_scrape_comments(page: Page) -> list[dict]:
 
 
 def dom_scrape_post_links(page: Page) -> list[str]:
-    """DOM fallback: collect post links visible on current page."""
+    """DOM fallback: collect post URLs from anchor hrefs."""
     return page.evaluate("""() => {
         var seen = new Set(); var result = [];
-        var links = document.querySelectorAll('a[href*="/posts/"], a[href*="story_fbid"], a[href*="permalink.php"]');
+        var links = document.querySelectorAll(
+            'a[href*="/posts/"], a[href*="story_fbid"], a[href*="permalink.php"]'
+        );
         links.forEach(function(a) {
             var href = a.href || '';
             if (!href.includes('facebook.com') || href.includes('/stories/')) return;
@@ -423,7 +512,7 @@ def dom_scrape_post_links(page: Page) -> list[str]:
 
 
 def dom_scrape_photo_links(page: Page) -> list[dict]:
-    """DOM fallback: collect photo links visible on current page."""
+    """DOM fallback: collect photo URLs from anchor hrefs."""
     return page.evaluate("""() => {
         var seen = new Set(); var result = [];
         document.querySelectorAll('a').forEach(function(link) {
@@ -441,7 +530,7 @@ def dom_scrape_photo_links(page: Page) -> list[dict]:
 
 
 def dom_scrape_reel_links(page: Page) -> list[str]:
-    """DOM fallback: collect reel links visible on current page."""
+    """DOM fallback: collect reel URLs from anchor hrefs."""
     return page.evaluate(r"""() => {
         var seen = new Set(); var result = [];
         document.querySelectorAll('a').forEach(function(link) {
@@ -456,27 +545,24 @@ def dom_scrape_reel_links(page: Page) -> list[str]:
 
 
 def scroll_page(page: Page, steps: int = 1, step_px: int = 800, pause_ms: int = 1500):
-    """Scroll the page down by step_px × steps, pausing between each."""
     for _ in range(steps):
         page.evaluate(f"window.scrollBy(0, {step_px})")
         page.wait_for_timeout(pause_ms)
 
 
-def expand_comments(page: Page) -> int:
-    """Click any visible 'View more comments' buttons. Returns count clicked."""
-    return page.evaluate("""() => {
-        var clicked = 0;
-        if (!window.__fb_clicked) window.__fb_clicked = new Set();
-        var btns = document.querySelectorAll('div[role="button"], span[role="button"]');
-        for (var i = 0; i < btns.length; i++) {
-            var t = (btns[i].innerText || '').toLowerCase().trim();
-            if (!t.includes('view more comment') && !t.includes('more comment')) continue;
-            var rect = btns[i].getBoundingClientRect();
-            var sig  = t.substring(0, 30) + '|' + Math.round(rect.top) + '|' + Math.round(rect.left);
-            if (window.__fb_clicked.has(sig)) continue;
-            window.__fb_clicked.add(sig);
-            btns[i].click();
-            clicked++;
+def scroll_comment_panel(page: Page):
+    """Scroll the right-side comment panel on reel/video pages."""
+    page.evaluate("""() => {
+        var els = document.querySelectorAll('*');
+        for (var i = 0; i < els.length; i++) {
+            var el = els[i];
+            var s = window.getComputedStyle(el);
+            var r = el.getBoundingClientRect();
+            if ((s.overflowY === 'auto' || s.overflowY === 'scroll') &&
+                r.left > 800 && r.height > 300) {
+                el.scrollTop += 400;
+                return;
+            }
         }
-        return clicked;
-    }""") or 0
+        window.scrollBy(0, 400);
+    }""")

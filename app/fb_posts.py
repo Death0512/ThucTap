@@ -1,7 +1,7 @@
 """
 fb_posts.py — Facebook text-post scraper.
 Acquisition: Scrapling stealth session (FBSession) driving a Playwright page;
-data extracted from intercepted GraphQL responses, DOM as fallback.
+data extracted from intercepted GraphQL responses, adaptive DOM as fallback.
 """
 
 import json
@@ -14,8 +14,6 @@ from scrapling_session import FBSession
 COOKIE_FILE = "fb_cookies.json"
 OUTPUT_FILE = "fb_posts.json"
 
-
-# ── Phase 1 — collect /posts/ URLs ───────────────────────────────────────────
 
 def phase1_collect_urls(page, profile_url: str, max_posts: int) -> list[str]:
     print("\n" + "═" * 65)
@@ -42,7 +40,6 @@ def phase1_collect_urls(page, profile_url: str, max_posts: int) -> list[str]:
     page.wait_for_timeout(5000)
 
     while len(post_links) < max_posts and scroll_n < MAX_SCROLLS:
-        # GraphQL extraction
         for p in pw_utils.extract_posts_from_graphql(gql_responses):
             url = p.get("post_url", "")
             if url and profile_url.rstrip("/").split("/")[-1] in url and url not in seen:
@@ -52,7 +49,6 @@ def phase1_collect_urls(page, profile_url: str, max_posts: int) -> list[str]:
                 if len(post_links) >= max_posts:
                     break
 
-        # DOM fallback
         for url in pw_utils.dom_scrape_post_links(page):
             if profile_url.rstrip("/").split("/")[-1] in url and url not in seen:
                 seen.add(url)
@@ -84,8 +80,6 @@ def phase1_collect_urls(page, profile_url: str, max_posts: int) -> list[str]:
     return post_links
 
 
-# ── Screenshot helper ─────────────────────────────────────────────────────────
-
 def take_screenshot(page, post_url: str, idx: int) -> str | None:
     os.makedirs("post_screenshots", exist_ok=True)
     fbid = re.search(r"pfbid(\w+)|/posts/(\w+)|fbid=(\w+)", post_url)
@@ -102,8 +96,6 @@ def take_screenshot(page, post_url: str, idx: int) -> str | None:
         return None
 
 
-# ── Phase 2 — scrape each post ────────────────────────────────────────────────
-
 def phase2_scrape_post(page, post_url: str, idx: int, total: int) -> dict:
     print(f"\n  [{idx}/{total}] {post_url}")
 
@@ -115,32 +107,8 @@ def phase2_scrape_post(page, post_url: str, idx: int, total: int) -> dict:
     def _navigate():
         page.goto(post_url, wait_until="domcontentloaded", timeout=30000)
         page.wait_for_timeout(6000)
-        # Expand "See more"
-        page.evaluate("""() => {
-            var btns = document.querySelectorAll('div[role="button"],span[role="button"]');
-            for (var i = 0; i < btns.length; i++) {
-                var t = (btns[i].innerText||'').trim();
-                if (t === 'See more' || t === 'See More') { btns[i].click(); break; }
-            }
-        }""")
-        page.wait_for_timeout(1000)
-        # Switch to All Comments
-        page.evaluate("""() => {
-            var btns = document.querySelectorAll('div[role="button"],span[role="button"]');
-            for (var i = 0; i < btns.length; i++) {
-                var t = (btns[i].innerText||'').trim().toLowerCase();
-                if (t === 'most relevant' || t === 'all comments') { btns[i].click(); return; }
-            }
-        }""")
-        page.wait_for_timeout(2000)
-        page.evaluate("""() => {
-            var btns = document.querySelectorAll('div[role="menuitem"],div[role="option"]');
-            for (var i = 0; i < btns.length; i++) {
-                var t = (btns[i].innerText||'').trim().toLowerCase();
-                if (t === 'all comments' || t.startsWith('all comments')) { btns[i].click(); return; }
-            }
-        }""")
-        page.wait_for_timeout(2000)
+        pw_utils.click_see_more(page)
+        pw_utils.switch_to_all_comments(page)
 
     responses = pw_utils.capture_graphql(
         page,
@@ -150,7 +118,6 @@ def phase2_scrape_post(page, post_url: str, idx: int, total: int) -> dict:
         retries=3,
     )
 
-    # Extract from GraphQL
     comments  = pw_utils.extract_comments_from_graphql(responses)
     gql_posts = pw_utils.extract_posts_from_graphql(responses)
     for p in gql_posts:
@@ -159,32 +126,14 @@ def phase2_scrape_post(page, post_url: str, idx: int, total: int) -> dict:
         if not caption and p.get("caption"):
             caption = p["caption"]
 
-    # DOM fallback for date
     if not date_text:
-        date_text = page.evaluate("""() => {
-            var allSpans = document.querySelectorAll('span[id]');
-            for (var i = 0; i < allSpans.length; i++) {
-                if (/^_[rR]_/.test(allSpans[i].id)) {
-                    var t = allSpans[i].innerText.trim();
-                    if (t && t.length > 0) return t;
-                }
-            }
-            return null;
-        }""")
+        date_text = pw_utils.get_date_text(page)
 
-    # DOM fallback for caption
     if not caption:
-        caption = page.evaluate("""() => {
-            var c = document.querySelector('div.xdj266r.x14z9mp.xat24cr.x1lziwak.x1vvkbs');
-            if (c) return (c.innerText||'').trim() || null;
-            var m = document.querySelector('[data-ad-comet-preview="message"],[data-ad-preview="message"]');
-            return m ? (m.innerText||'').trim() || null : null;
-        }""")
+        caption = pw_utils.get_caption(page)
 
-    # Screenshot
     screenshot_path = take_screenshot(page, post_url, idx)
 
-    # DOM fallback for comments — scroll + expand
     if not comments:
         for _ in range(25):
             clicked = pw_utils.expand_comments(page)
@@ -207,8 +156,6 @@ def phase2_scrape_post(page, post_url: str, idx: int, total: int) -> dict:
         "comments":        comments,
     }
 
-
-# ── Main ──────────────────────────────────────────────────────────────────────
 
 def main(profile_url: str = "", max_posts: int = 10):
     if not profile_url:
