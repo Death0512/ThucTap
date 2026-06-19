@@ -25,10 +25,6 @@ services:
       - ./app/post_screenshots:/app/post_screenshots
       - ./app/status:/app/status
 
-      # Mount OpenCode config + auth for LLM provider credentials
-      - ~/.config/opencode/config.json:/root/.config/opencode/config.json:ro
-      - ~/.local/share/opencode/auth.json:/root/.local/share/opencode/auth.json:ro
-
     environment:
       - FLASK_ENV=production
       - FLASK_HOST=0.0.0.0

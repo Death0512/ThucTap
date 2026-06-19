@@ -5,31 +5,12 @@ import urllib.request
 import os
 
 
-_OPCODE_CONFIG_PATH = os.path.expanduser('~/.config/opencode/config.json')
-_OPCODE_AUTH_PATH = os.path.expanduser('~/.local/share/opencode/auth.json')
-
 NVIDIA_BASE_URL   = 'https://integrate.api.nvidia.com/v1'
 NVIDIA_MODEL      = 'meta/llama-3.3-70b-instruct'
 NVIDIA_VIS_MODEL  = 'meta/llama-3.2-11b-vision-instruct'
 
-
-def _load_json(path):
-    try:
-        with open(path) as f:
-            return json.load(f)
-    except Exception:
-        return {}
-
-
-_config = _load_json(_OPCODE_CONFIG_PATH)
-_auth   = _load_json(_OPCODE_AUTH_PATH)
-
-# Read NVIDIA NIM credentials from OpenCode config / auth, with env var overrides
-_nvidia_opts = _config.get('provider', {}).get('nvidia', {}).get('options', {})
-_nvidia_key  = _auth.get('nvidia', {}).get('key', '')
-
-LLM_BASE_URL   = os.environ.get('LLM_BASE_URL')   or _nvidia_opts.get('baseURL', NVIDIA_BASE_URL)
-LLM_API_KEY    = os.environ.get('LLM_API_KEY')    or _nvidia_opts.get('apiKey', _nvidia_key)
+LLM_BASE_URL   = os.environ.get('LLM_BASE_URL',  NVIDIA_BASE_URL)
+LLM_API_KEY    = os.environ.get('LLM_API_KEY',    '')
 LLM_MODEL      = os.environ.get('LLM_MODEL',      NVIDIA_MODEL)
 LLM_VISION_MODEL = os.environ.get('LLM_VISION_MODEL', NVIDIA_VIS_MODEL)
 

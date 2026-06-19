@@ -267,8 +267,8 @@ docker exec -it crawling-bot curl http://host.docker.internal:11434/api/tags
 ```
 If it fails, restart Ollama with `OLLAMA_HOST=0.0.0.0:11434 ollama serve`
 
-**NVIDIA NIM not reachable**
-Ensure OpenCode config (`~/.config/opencode/config.json`) has provider settings for NVIDIA, or set `LLM_BASE_URL` and `LLM_API_KEY` environment variables.
+**NVIDIA NIM not reachable**  
+Set `LLM_BASE_URL` and `LLM_API_KEY` environment variables in `docker-compose.yml`.
 
 **DB error: no such table or other DB related error**  
 Start a new investigation — schema is created automatically on first use. If you stop the process during analysis, delete that investigation and start a new one.

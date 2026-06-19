@@ -1293,7 +1293,7 @@
           <div class="mp-icon">🤖</div>
           <div>
             <div class="mp-title">{{ _('intelligence_engine') }}</div>
-            <div class="mp-sub">{{ _('powered_by_opencode') }} — {{ system.provider }}</div>
+            <div class="mp-sub">NVIDIA NIM — {{ system.provider }}</div>
           </div>
         </div>
         <div class="mp-active-badge">
@@ -1303,9 +1303,8 @@
       </div>
 
       <div style="padding:10px 0;color:rgba(255,255,255,0.7);font-size:13px;line-height:1.7;">
-        Using the LLM provider configured in OpenCode (<code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:4px;">{{ system.provider }}</code>).
-        Change model and provider from OpenCode's configuration at
-        <code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:4px;">~/.config/opencode/config.json</code>.
+        Using NVIDIA NIM as the AI provider (<code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:4px;">{{ system.provider }}</code>).
+        Change model and provider by setting <code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:4px;">LLM_MODEL</code>, <code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:4px;">LLM_BASE_URL</code>, or <code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:4px;">LLM_API_KEY</code> environment variables.
       </div>
 
     </div>
