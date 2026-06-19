@@ -13,7 +13,7 @@
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)]()
 [![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20Windows-lightgrey?style=flat-square)]()
 
-**AI-powered Facebook OSINT platform — 100% local, zero cloud dependency.**
+**AI-powered Facebook OSINT platform — Scrapling stealth + NVIDIA NIM intelligence.**
 
 [Installation](#installation) · [Troubleshooting](#troubleshooting) · [Disclaimer](#️-disclaimer)
 
@@ -81,7 +81,7 @@ The key insight: Facebook loads content via **GraphQL API calls**, not HTML. Cra
 - 👤 **Face intelligence** — Face detection, 128D encoding, and identity clustering across all images using HOG model
 - 🕸️ **Network graphs** — Interactive HTML graphs (force-directed, co-interactor relationship matrix)
 - 📄 **PDF reports** — Professional intelligence report with charts
-- 🤖 **Local AI** — Defaults to NVIDIA NIM (LLaMA 3.3 70B), also supports Ollama via model selector
+- 🤖 **AI-powered analysis** — NVIDIA NIM (LLaMA 3.3 70B) for sentiment, stance, emotion, and country detection; Ollama also supported as an alternative
 - 🐳 **Docker ready** — Single-command deployment on Linux and Windows
 
 ---
@@ -114,7 +114,8 @@ The key insight: Facebook loads content via **GraphQL API calls**, not HTML. Cra
 | RAM | 8 GB | 16 GB |
 | Storage | 20 GB free | 40 GB free |
 | Docker | Docker Desktop / Engine | Latest stable |
-| Ollama (optional) | Latest | Latest |
+| NVIDIA NIM API Key | Required | [Get one free](https://build.nvidia.com/) |
+| Ollama (alternative) | Latest | Latest |
 
 ---
 
@@ -127,15 +128,21 @@ The key insight: Facebook loads content via **GraphQL API calls**, not HTML. Cra
 - **Linux:** https://docs.docker.com/engine/install/ubuntu/
 - **Windows:** https://docs.docker.com/desktop/install/windows-install/
 
-**Step 2 (optional) — Install Ollama**
+**Step 2 — Get a NVIDIA NIM API Key (required)**
 
-Skip if using NVIDIA NIM (default) or another OpenAI-compatible provider.
+1. Go to [build.nvidia.com](https://build.nvidia.com/) and create an account
+2. Generate an API key from your account dashboard
+3. You'll set this in Step 3 of Quick Start below
+
+**Step 3 (alternative) — Install Ollama**
+
+If you prefer fully local inference (no cloud API), install Ollama instead:
 
 ```bash
 curl -fsSL https://ollama.com/install.sh | sh
 ```
 
-**Step 3 (optional) — Start Ollama bound to all interfaces**
+Start Ollama bound to all interfaces:
 
 ```bash
 OLLAMA_HOST=0.0.0.0:11434 ollama serve
@@ -179,7 +186,21 @@ New-Item -ItemType Directory app/reports, app/face_data, app/post_screenshots, a
 New-Item -ItemType File app/fb_cookies.json, app/socmint.db, app/socmint_manual.db
 ```
 
-**Step 3 — Build the Docker image**
+**Step 3 — Set your NVIDIA NIM API key**
+
+Edit `docker-compose.yml` and add your API key to the `environment` section:
+
+```yaml
+environment:
+  - FLASK_ENV=production
+  - FLASK_HOST=0.0.0.0
+  - FLASK_PORT=5000
+  - LLM_API_KEY=nvapi-xxxxxxxxxxxxxxxxxxxx
+```
+
+> If using Ollama instead, omit `LLM_API_KEY` and add `- LLM_BASE_URL=http://host.docker.internal:11434/v1`.
+
+**Step 4 — Build the Docker image**
 
 > ⚠️ First build takes **15–25 minutes** — dlib compiles from source. Subsequent builds are fast (layers cached).
 
@@ -187,7 +208,7 @@ New-Item -ItemType File app/fb_cookies.json, app/socmint.db, app/socmint_manual.
 docker compose build
 ```
 
-**Step 4 — Start the container**
+**Step 5 — Start the container**
 
 ```bash
 docker compose up -d
@@ -195,13 +216,13 @@ docker compose up -d
 docker compose logs -f
 ```
 
-**Step 5 — Open the web UI**
+**Step 6 — Open the web UI**
 
 ```
 http://localhost:5000
 ```
 
-**Step 6 — Import session cookies**
+**Step 7 — Import session cookies**
 
 ```
 http://localhost:5000/tools/import-cookies
@@ -209,9 +230,9 @@ http://localhost:5000/tools/import-cookies
 
 ---
 
-### Pull an AI Model (for Ollama)
+### Pull an AI Model (Ollama only)
 
-If using Ollama instead of NVIDIA NIM, pull a model on your host machine:
+If using **Ollama** instead of NVIDIA NIM, pull a model on your host machine:
 
 ```bash
 ollama pull gemma3:4b
@@ -224,6 +245,8 @@ Or use the **AI Model panel** in the web UI — select a model and click **Apply
 | 8 GB | gemma3:4b |
 | 16 GB | gemma3:12b |
 | 32 GB | gemma3:27b |
+
+> **NVIDIA NIM users:** No model pull needed — the model is hosted on NVIDIA's cloud. Just ensure your API key is set.
 
 ---
 

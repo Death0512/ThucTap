@@ -1,7 +1,7 @@
 # ══════════════════════════════════════════════════════════════════════════════
 # Crawling Bot — docker-compose.yml
 # Works on: Linux, Windows (Docker Desktop), Mac
-# Uses OpenCode's configured LLM provider for AI analysis
+# Uses NVIDIA NIM for AI analysis (set LLM_API_KEY below)
 # ══════════════════════════════════════════════════════════════════════════════
 
 
