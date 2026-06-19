@@ -45,7 +45,7 @@ def capture_graphql(
     max_responses: int = 0,
     timeout_ms: int = 15000,
     retries: int = 3,
-    save_to: str | "./captured_responses.json",
+    save_to: str = "./captured_responses.json",
 ) -> list[dict]:
     """
     Execute trigger_fn then collect all GraphQL JSON responses that pass filter_fn.
