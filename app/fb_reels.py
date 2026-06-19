@@ -1,6 +1,7 @@
 """
-fb_reels.py — Facebook reel scraper (Playwright + GraphQL).
-Replaces fb_reels_sb.py (SeleniumBase).
+fb_reels.py — Facebook reel scraper.
+Acquisition: Scrapling stealth session (FBSession) driving a Playwright page;
+data extracted from intercepted GraphQL responses, DOM as fallback.
 """
 
 import json

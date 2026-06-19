@@ -1,6 +1,7 @@
 """
-fb_manual_unified.py — Manual batch URL scraper (Playwright + GraphQL).
-Replaces fb_manual_unified_sb.py (SeleniumBase).
+fb_manual_unified.py — Manual batch URL scraper.
+Acquisition: Scrapling stealth session (FBSession) driving a Playwright page;
+data extracted from intercepted GraphQL responses, DOM as fallback.
 Supports: photo, post, reel, video URLs.
 """
 

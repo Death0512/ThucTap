@@ -1,5 +1,5 @@
 """
-refresh_cookies.py — Manual cookie refresh tool using Playwright.
+refresh_cookies.py — Manual cookie refresh tool (Scrapling stealth session).
 Opens Facebook in a visible browser window, waits for manual login,
 then saves the session cookies to fb_cookies.json.
 """

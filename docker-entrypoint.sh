@@ -19,7 +19,7 @@ echo -e "${RED}██║     ██╔══██╗██╔══██║█
 echo -e "${RED}╚██████╗██║  ██║██║  ██║╚███╔███╔╝███████╗██║██║ ╚████║╚██████╔╝    ██████╔╝╚██████╔╝   ██║   ${RESET}"
 echo -e "${RED} ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚══╝╚══╝ ╚══════╝╚═╝╚═╝  ╚═══╝ ╚═════╝     ╚═════╝  ╚═════╝    ╚═╝   ${RESET}"
 echo ""
-echo -e "${YELLOW}                        Facebook OSINT Platform — v2.0 (Scrapling + Playwright)${RESET}"
+echo -e "${PINK}                        Facebook OSINT Platform — (Scrapling + Playwright)${RESET}"
 echo ""
 
 

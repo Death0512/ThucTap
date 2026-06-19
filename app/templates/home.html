@@ -1142,20 +1142,19 @@
   <!-- ══ HERO ══ -->
   <div class="top-section">
     <div class="text-block">
-      <div class="tool-name">Crawling Bot<span>Facebook OSINT Platform (Beta Version)</span></div>
-      <div class="tool-desc"><b>Facebook intelligence platform for target profiling, network mapping, sentiment analysis
-          and professional PDF reports — all running locally.</b></div>
+      <div class="tool-name">Crawling Bot<span>{{ _('facebook_osint_platform') }} {{ _('beta_version') }}</span></div>
+      <div class="tool-desc"><b>{{ _('home_subtitle') }}</b></div>
       <div class="caps-row">
-        <div class="cap cap-v">Target Profiling</div>
-        <div class="cap cap-r">AI Comment Intelligence</div>
-        <div class="cap cap-g">Network Mapping</div>
-        <div class="cap cap-a">Country Detection</div>
-        <div class="cap cap-c">Face Clustering</div>
-        <div class="cap cap-v">Tier Scoring</div>
-        <div class="cap cap-r">PDF Reports</div>
-        <div class="cap cap-g">100% Local</div>
+        <div class="cap cap-v">{{ _('tag_target_profiling') }}</div>
+        <div class="cap cap-r">{{ _('tag_ai_comment_intelligence') }}</div>
+        <div class="cap cap-g">{{ _('tag_network_mapping') }}</div>
+        <div class="cap cap-a">{{ _('tag_country_detection') }}</div>
+        <div class="cap cap-c">{{ _('tag_face_clustering') }}</div>
+        <div class="cap cap-v">{{ _('tag_tier_scoring') }}</div>
+        <div class="cap cap-r">{{ _('tag_pdf_reports') }}</div>
+        <div class="cap cap-g">{{ _('tag_100_local') }}</div>
       </div>
-      <div class="tool-quote"><b>"The truth is never buried deep enough to escape the right set of eyes."</b></div>
+      <div class="tool-quote"><b>{{ _('quote_text') }}</b></div>
     </div>
     <div class="logo-block">
       <img src="{{ url_for('serve_logo') }}" alt="Crawling Bot" class="logo-img" onerror="this.style.display='none'">
@@ -1169,7 +1168,7 @@
     <div class="sys-bar">
       <div class="sys-item {{ 'sys-ok' if system.llm_ok else 'sys-err' }}">
         <span class="sys-dot"></span>
-        <span>AI Engine {{ 'Online' if system.llm_ok else 'Offline' }}</span>
+        <span>{{ _('ai_engine') }} {{ _('online') if system.llm_ok else _('offline') }}</span>
       </div>
       <div class="sys-item sys-info">
         <span class="sys-dot"></span>
@@ -1177,26 +1176,26 @@
       </div>
       <div class="sys-item sys-info">
         <span class="sys-dot"></span>
-        <span>via OpenCode</span>
+        <span>{{ _('openCode_via') }}</span>
       </div>
       <div class="sys-item {{ 'sys-ok' if system.cookies_ok else 'sys-err' }}">
         <span class="sys-dot"></span>
-        <span>Session {{ 'Active' if system.cookies_ok else 'Missing' }}</span>
+        <span>Session {{ _('active') if system.cookies_ok else _('expired') }}</span>
       </div>
     </div>
 
     {% if not system.llm_ok %}
-    <div class="sys-alert sys-alert-err">AI Engine offline — check your OpenCode provider configuration.</div>
+    <div class="sys-alert sys-alert-err">{{ _('ai_engine') }} offline — {{ _('check_config') }}</div>
     {% endif %}
     {% if not system.cookies_ok %}
-    <div class="sys-alert sys-alert-warn">Session missing — <a href="{{ url_for('refresh_cookies') }}"
-        style="color:#fbbf24;font-weight:700;">Refresh Cookies →</a></div>
+    <div class="sys-alert sys-alert-warn">{{ _('session_missing') }} — <a href="{{ url_for('refresh_cookies') }}"
+        style="color:#fbbf24;font-weight:700;">{{ _('refresh_cookies') }} →</a></div>
     {% endif %}
 
     <hr class="h-divider">
 
     <!-- START NEW INVESTIGATION -->
-    <div class="sec-label">Start New Investigation</div>
+    <div class="sec-label">{{ _('start_new_investigation') }}</div>
     <div class="mode-cards">
       <a href="{{ url_for('scan_new') }}" class="mode-card mode-auto">
         <div class="mode-icon-wrap">
@@ -1209,16 +1208,14 @@
               stroke-linejoin="round" />
           </svg>
         </div>
-        <div class="mode-title">Automated Profile</div>
-        <div class="mode-desc">Full investigation on a single Facebook profile. Collect posts, photos and reels, analyze
-          all interactions with AI, map network connections and generate a complete intelligence report with face
-          detection.</div>
+        <div class="mode-title">{{ _('mode_auto_title') }}</div>
+        <div class="mode-desc">{{ _('mode_auto_desc') }}</div>
         <div class="mode-tags">
-          <span class="mtag mtag-v">Light / Medium / Deep</span>
-          <span class="mtag mtag-r">Full PDF Report</span>
-          <span class="mtag mtag-g">Face Intelligence</span>
+          <span class="mtag mtag-v">{{ _('light') }} / {{ _('medium') }} / {{ _('deep') }}</span>
+          <span class="mtag mtag-r">{{ _('pdf_report') }}</span>
+          <span class="mtag mtag-g">{{ _('tag_face') }}</span>
         </div>
-        <div class="mode-cta">Start Investigation <span class="mode-cta-arrow">→</span></div>
+        <div class="mode-cta">{{ _('mode_auto_cta') }} <span class="mode-cta-arrow">→</span></div>
       </a>
       <a href="{{ url_for('batch_new') }}" class="mode-card mode-batch">
         <div class="mode-icon-wrap">
@@ -1231,21 +1228,20 @@
               stroke-linejoin="round" />
           </svg>
         </div>
-        <div class="mode-title">Manual Batch URLs</div>
-        <div class="mode-desc">Investigate a specific set of Facebook posts, photos or reels. Paste up to 15 URLs and
-          analyze their commentor networks, sentiment patterns, geographic distribution and generate a PDF report.</div>
+        <div class="mode-title">{{ _('manual_batch_urls') }}</div>
+        <div class="mode-desc">{{ _('mode_batch_desc') }}</div>
         <div class="mode-tags">
-          <span class="mtag mtag-a">Up to 15 URLs</span>
-          <span class="mtag mtag-r">Photo / Reel / Post</span>
-          <span class="mtag mtag-g">PDF Report</span>
+          <span class="mtag mtag-a">{{ _('tag_up_to_15') }}</span>
+          <span class="mtag mtag-r">{{ _('tag_photo_reel_post') }}</span>
+          <span class="mtag mtag-g">{{ _('pdf_report') }}</span>
         </div>
-        <div class="mode-cta">Start Batch Analysis <span class="mode-cta-arrow">→</span></div>
+        <div class="mode-cta">{{ _('start_batch_analysis') }} <span class="mode-cta-arrow">→</span></div>
       </a>
     </div>
 
     <!-- PAST INVESTIGATIONS -->
     {% if profiles or batches %}
-    <div class="sec-label">Past Investigations</div>
+    <div class="sec-label">{{ _('past_investigations') }}</div>
     <div class="recent-grid">
       {% for p in profiles %}
       <div class="recent-card recent-auto">
@@ -1256,7 +1252,7 @@
           <div class="rc-inner">
             <div class="rc-icon">👤</div>
             <div class="rc-body">
-              <div class="rc-type">Profile Investigation</div>
+              <div class="rc-type">{{ _('profile_investigation') }}</div>
               <div class="rc-name">{{ p.owner_name or p.profile_url }}</div>
               <div class="rc-meta">{{ p.scraped_at[:10] if p.scraped_at else '—' }}</div>
             </div>
@@ -1274,7 +1270,7 @@
           <div class="rc-inner">
             <div class="rc-icon">🔗</div>
             <div class="rc-body">
-              <div class="rc-type">Batch Analysis</div>
+              <div class="rc-type">{{ _('batch_analysis') }}</div>
               <div class="rc-name">{{ b.label or b.batch_id }}</div>
               <div class="rc-meta">{{ b.created_at[:10] if b.created_at else '—' }}</div>
             </div>
@@ -1289,15 +1285,15 @@
     <hr class="h-divider">
 
     <!-- ══ AI MODEL INFO ══ -->
-    <div class="sec-label">AI Model</div>
+    <div class="sec-label">{{ _('ai_model') }}</div>
     <div class="model-panel">
 
       <div class="mp-header">
         <div class="mp-title-group">
           <div class="mp-icon">🤖</div>
           <div>
-            <div class="mp-title">Intelligence Engine</div>
-            <div class="mp-sub">POWERED BY OPENCODE — {{ system.provider }}</div>
+            <div class="mp-title">{{ _('intelligence_engine') }}</div>
+            <div class="mp-sub">{{ _('powered_by_opencode') }} — {{ system.provider }}</div>
           </div>
         </div>
         <div class="mp-active-badge">
@@ -1315,7 +1311,7 @@
     </div>
 
     <!-- SYSTEM TOOLS -->
-    <div class="sec-label">System Tools</div>
+    <div class="sec-label">{{ _('system_tools') }}</div>
     <div class="tools-row" style="margin-bottom:28px;flex-wrap:wrap;">
 
       <!-- Import Cookies — RECOMMENDED -->
@@ -1327,15 +1323,15 @@
         <div class="tool-icon">🍪</div>
         <div class="tool-body">
           <div class="tool-title2" style="display:flex;align-items:center;gap:8px;">
-            Import Session Cookies
+            {{ _('import_session_cookies') }}
             <span style="font-size:8px;font-weight:800;padding:2px 7px;border-radius:10px;
                          background:rgba(16,185,129,0.1);color:#10b981;
                          border:1px solid rgba(16,185,129,0.25);letter-spacing:0.08em;">
-              ★ RECOMMENDED
+              ★ {{ _('recommended') }}
             </span>
           </div>
           <div class="tool-desc2">
-            Use Cookie-Editor browser extension to import cookies.
+            {{ _('import_cookies_desc') }}
             Works on <strong>Windows, Mac and Linux</strong> — no Selenium required.
           </div>
         </div>
@@ -1346,9 +1342,9 @@
       <a href="{{ url_for('refresh_cookies') }}" class="tool-card">
         <div class="tool-icon">🔄</div>
         <div class="tool-body">
-          <div class="tool-title2">Refresh Session Cookies</div>
+          <div class="tool-title2">{{ _('refresh_session_cookies') }}</div>
           <div class="tool-desc2">
-            Classic Selenium-based refresh — opens a browser window for manual login.
+            {{ _('refresh_cookies_desc') }}
             Linux only.
           </div>
         </div>
@@ -1359,8 +1355,8 @@
       <a href="{{ url_for('db_cleaner') }}" class="tool-card tool-card-danger">
         <div class="tool-icon">🗑️</div>
         <div class="tool-body">
-          <div class="tool-title2">Database Cleaner</div>
-          <div class="tool-desc2">Permanently delete investigation data, face images and reset databases.</div>
+          <div class="tool-title2">{{ _('database_cleaner') }}</div>
+          <div class="tool-desc2">{{ _('db_cleaner_desc') }}</div>
         </div>
         <div class="tool-arr">→</div>
       </a>
@@ -1370,7 +1366,7 @@
 
     <!-- FOOTER -->
     <div class="home-foot">
-      <span>Crawling Bot &nbsp;·&nbsp; Facebook OSINT Platform &nbsp;·&nbsp; Developed for <strong>Investigators</strong></span>
+      <span>Crawling Bot &nbsp;·&nbsp; {{ _('facebook_osint_platform') }} &nbsp;·&nbsp; {{ _('developed_for') }} <strong>Investigators</strong></span>
       <span>{{ system.model }} &nbsp;·&nbsp; via OpenCode</span>
     </div>
 
@@ -1382,7 +1378,7 @@
 <script>
   function deleteProfile(id, btn) {
     event.preventDefault(); event.stopPropagation();
-    if (!confirm('Delete this profile investigation? This cannot be undone.')) return;
+    if (!confirm('{{ _('delete_confirm_profile')|safe }}')) return;
     btn.textContent = '⏳'; btn.disabled = true;
     fetch(`/api/delete/profile/${id}`, { method: 'POST' })
       .then(r => r.json()).then(d => {
@@ -1392,7 +1388,7 @@
   }
   function deleteBatch(id, btn) {
     event.preventDefault(); event.stopPropagation();
-    if (!confirm('Delete this batch investigation? This cannot be undone.')) return;
+    if (!confirm('{{ _('delete_confirm_batch')|safe }}')) return;
     btn.textContent = '⏳'; btn.disabled = true;
     fetch(`/api/delete/batch/${id}`, { method: 'POST' })
       .then(r => r.json()).then(d => {

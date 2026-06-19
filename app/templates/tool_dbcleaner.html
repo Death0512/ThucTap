@@ -94,31 +94,29 @@
 {% block content %}
 <div class="tool-page">
 
-  <div class="tool-title">🗑️ Database Cleaner</div>
-  <div class="tool-sub">Permanently delete investigation data from Crawling Bot</div>
+  <div class="tool-title">🗑️ {{ _('tool_db_title') }}</div>
+  <div class="tool-sub">{{ _('tool_db_sub') }}</div>
 
   <div class="warn-banner">
     <div class="warn-banner-icon">⚠️</div>
     <div class="warn-banner-text">
-      <strong>This action cannot be undone.</strong> All investigation data, face images,
-      network graphs and reports will be permanently deleted. Make sure you have downloaded
-      any PDF reports you need before proceeding.
+      <strong>{{ _('db_warning') }}</strong> {{ _('wipe_everything_desc') }}
     </div>
   </div>
 
   <!-- DB Info -->
   <div class="db-grid">
     <div class="db-card">
-      <div class="db-card-title">Profile Investigations (socmint.db)</div>
-      <div class="db-stat"><span class="db-stat-label">Investigations</span><span class="db-stat-val">{{ info.profiles }}</span></div>
-      <div class="db-stat"><span class="db-stat-label">DB Size</span><span class="db-stat-val">{{ info.socmint_size }} MB</span></div>
-      <div class="db-stat"><span class="db-stat-label">Face Data</span><span class="db-stat-val">{{ '✅ Present' if info.faces_exist else '—' }}</span></div>
+      <div class="db-card-title">{{ _('db_profiles') }}</div>
+      <div class="db-stat"><span class="db-stat-label">{{ _('db_investigations') }}</span><span class="db-stat-val">{{ info.profiles }}</span></div>
+      <div class="db-stat"><span class="db-stat-label">{{ _('db_size') }}</span><span class="db-stat-val">{{ info.socmint_size }} MB</span></div>
+      <div class="db-stat"><span class="db-stat-label">{{ _('db_face_data') }}</span><span class="db-stat-val">{{ '✅ ' + _('db_present') if info.faces_exist else '—' }}</span></div>
     </div>
     <div class="db-card">
-      <div class="db-card-title">Batch Investigations (socmint_manual.db)</div>
-      <div class="db-stat"><span class="db-stat-label">Batches</span><span class="db-stat-val">{{ info.batches }}</span></div>
-      <div class="db-stat"><span class="db-stat-label">DB Size</span><span class="db-stat-val">{{ info.manual_size }} MB</span></div>
-      <div class="db-stat"><span class="db-stat-label">Type</span><span class="db-stat-val">Manual URLs</span></div>
+      <div class="db-card-title">{{ _('db_batches') }}</div>
+      <div class="db-stat"><span class="db-stat-label">{{ _('db_batches_count') }}</span><span class="db-stat-val">{{ info.batches }}</span></div>
+      <div class="db-stat"><span class="db-stat-label">{{ _('db_size') }}</span><span class="db-stat-val">{{ info.manual_size }} MB</span></div>
+      <div class="db-stat"><span class="db-stat-label">{{ _('db_type') }}</span><span class="db-stat-val">{{ _('db_manual_urls') }}</span></div>
     </div>
   </div>
 
@@ -127,24 +125,24 @@
     <label class="clean-option" onclick="select('both')">
       <div class="option-icon">💣</div>
       <div class="option-body">
-        <div class="option-title">Wipe Everything</div>
-        <div class="option-desc">Delete all profile investigations, all batch analyses, face images and all status files</div>
+        <div class="option-title">{{ _('wipe_everything') }}</div>
+        <div class="option-desc">{{ _('wipe_everything_desc') }}</div>
       </div>
       <div class="option-check" id="chk-both"></div>
     </label>
     <label class="clean-option" onclick="select('profile')">
       <div class="option-icon">👤</div>
       <div class="option-body">
-        <div class="option-title">Profile Investigations Only</div>
-        <div class="option-desc">Delete socmint.db + face_data/ folder. Keep batch analysis data intact.</div>
+        <div class="option-title">{{ _('profiles_only') }}</div>
+        <div class="option-desc">{{ _('profiles_only_desc') }}</div>
       </div>
       <div class="option-check" id="chk-profile"></div>
     </label>
     <label class="clean-option" onclick="select('manual')">
       <div class="option-icon">🔗</div>
       <div class="option-body">
-        <div class="option-title">Batch Investigations Only</div>
-        <div class="option-desc">Delete socmint_manual.db. Keep profile investigation data intact.</div>
+        <div class="option-title">{{ _('batches_only') }}</div>
+        <div class="option-desc">{{ _('batches_only_desc') }}</div>
       </div>
       <div class="option-check" id="chk-manual"></div>
     </label>

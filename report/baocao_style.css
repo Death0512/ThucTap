@@ -1,0 +1,175 @@
+/* ══════════════════════════════════════════════════════════════
+   Crawling Bot — Báo cáo sản phẩm · Bright Solid Theme
+   File: baocao_style.css
+   ══════════════════════════════════════════════════════════════ */
+
+:root{
+  --bg:#ffffff; --ink:#1a1a2e; --muted:#555577; --faint:#a0a0b8;
+  --p1:#e63946; --p2:#f4845f; --p3:#f4a261; --c1:#457b9d; --c2:#1d3557;
+  --g1:#2a9d8f; --line:rgba(29,53,87,.15); --line2:rgba(230,57,70,.25);
+  --mono:'SFMono-Regular',Consolas,'Liberation Mono',monospace;
+  --sans:'Inter','Segoe UI',system-ui,sans-serif;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+html{scroll-behavior:smooth}
+
+body{
+  font-family:var(--sans);color:var(--ink);line-height:1.6;
+  background:linear-gradient(135deg, #faf9ff 0%, #f0f4f8 50%, #fdf2f4 100%);
+  padding:40px 16px;
+}
+
+.deck{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:26px}
+
+/* ── slides ── */
+
+.slide{
+  background:#fff;border:1px solid var(--line);border-radius:24px;padding:38px 44px;
+  position:relative;overflow:hidden;
+  box-shadow:0 4px 24px rgba(29,53,87,.08);
+}
+.slide::before{
+  content:'';position:absolute;inset:0 0 auto 0;height:4px;
+  background:var(--c2);
+}
+.slide > *{position:relative;z-index:1}
+
+/* ── tags ── */
+
+.tag{
+  display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);
+  font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+  color:#fff;padding:6px 14px;border-radius:30px;margin-bottom:16px;
+  background:var(--c2);
+}
+
+/* ── typography ── */
+
+h1{font-size:44px;font-weight:800;letter-spacing:-.02em;line-height:1.08;color:var(--ink)}
+h2{font-size:27px;font-weight:800;letter-spacing:-.01em;margin-bottom:10px;color:var(--ink)}
+h3{font-size:15px;font-weight:700;margin-bottom:8px;color:var(--c2)}
+p{color:var(--muted);font-size:15px}
+.lead{font-size:17px;color:var(--ink);max-width:800px}
+
+/* ── cover ── */
+
+.cover{text-align:center;padding:60px 40px}
+.cover .logo{
+  width:78px;height:78px;margin:0 auto 22px;border-radius:22px;display:grid;
+  place-items:center;font-size:36px;font-weight:900;color:#fff;
+  background:var(--c2);box-shadow:0 8px 24px rgba(29,53,87,.35);transform:rotate(-4deg)
+}
+.cover h1{font-size:56px;color:var(--ink)}
+
+.chips{margin-top:24px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.chip{
+  font-family:var(--mono);font-size:12px;color:var(--c2);padding:8px 14px;border-radius:30px;
+  background:#f0f4f8;border:1px solid var(--line)
+}
+.chip strong{color:var(--p1)}
+
+/* ── grids ── */
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+
+/* ── cards ── */
+
+.card{background:#f8f9fc;border:1px solid var(--line);border-radius:16px;padding:20px}
+.card.pop{border-left:4px solid var(--p1);background:#fef7f6}
+.card .ic{font-size:26px;margin-bottom:10px;display:block}
+.card h3{color:var(--ink)}
+.card p{font-size:14px}
+
+/* ── stats ── */
+
+.stat .num{font-size:38px;font-weight:900;line-height:1;color:var(--p1)}
+.stat .lbl{font-size:12.5px;color:var(--muted);margin-top:8px}
+
+/* ── lists ── */
+
+ul.clean{list-style:none;display:flex;flex-direction:column;gap:10px}
+ul.clean li{font-size:14.5px;color:var(--ink);padding-left:26px;position:relative}
+ul.clean li::before{content:'✦';position:absolute;left:0;top:1px;color:var(--c1);font-size:13px}
+.ok::before{content:'✓'!important;color:var(--g1)!important}
+.no::before{content:'✕'!important;color:var(--p1)!important}
+.star::before{content:'⚡'!important}
+
+/* ── inline code ── */
+
+code,.code{
+  font-family:var(--mono);font-size:13px;color:var(--c1);
+  background:#eef4f8;padding:1px 7px;border-radius:5px
+}
+
+/* ── feature rows (for UI walkthrough) ── */
+
+.feat{display:flex;gap:16px;align-items:flex-start;padding:16px 0;border-bottom:1px solid var(--line)}
+.feat:last-child{border-bottom:none}
+.feat .badge{
+  flex-shrink:0;width:46px;height:46px;border-radius:14px;display:grid;
+  place-items:center;font-size:22px;background:#f0f4f8;border:1px solid var(--line)
+}
+.feat .body h3{font-size:16px;color:var(--ink);margin-bottom:4px}
+.feat .body p{font-size:13.5px;color:var(--muted)}
+.feat .route{
+  font-family:var(--mono);font-size:11px;color:var(--c1);
+  background:#eef4f8;padding:2px 8px;border-radius:6px;display:inline-block;margin-top:6px
+}
+
+/* ── comparison table ── */
+
+table{width:100%;border-collapse:collapse;font-size:16px;margin-top:8px}
+th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--line)}
+th{
+  font-family:var(--mono);font-size:20px;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--c1);background:#f8f9fc;
+}
+td{color:var(--ink)}
+tr:last-child td{border-bottom:none}
+.old{color:var(--p1)}
+.new{color:var(--g1);font-weight:600}
+
+/* ── pipeline steps ── */
+
+.pipe{display:flex;gap:10px;flex-wrap:wrap;align-items:stretch;margin-top:6px}
+.step{
+  flex:1;min-width:120px;padding:14px;border-radius:14px;
+  background:#f8f9fc;border:1px solid var(--line);text-align:center
+}
+.step .s-n{font-family:var(--mono);font-size:11px;color:var(--p1);font-weight:700}
+.step .s-t{font-size:13.5px;font-weight:700;color:var(--ink);margin:6px 0 3px}
+.step .s-d{font-size:11.5px;color:var(--muted)}
+.pipe .arr{display:grid;place-items:center;color:var(--c1);font-size:20px;font-weight:900}
+
+/* ── quote block ── */
+
+.quote{
+  font-size:19px;color:var(--ink);font-weight:600;line-height:1.5;
+  padding:18px 22px;border-left:4px solid var(--p1);
+  background:#fef7f6;border-radius:0 14px 14px 0
+}
+
+/* ── footer ── */
+
+.footer{
+  text-align:center;color:var(--faint);font-family:var(--mono);
+  font-size:11.5px;letter-spacing:.08em;padding-top:6px
+}
+
+/* ── responsive ── */
+
+@media (max-width:780px){
+  .grid2,.grid3,.grid4{grid-template-columns:1fr}
+  .slide{padding:26px 22px}
+  h1{font-size:32px}.cover h1{font-size:38px}
+  .pipe .arr{display:none}
+}
+
+@media print{
+  body{background:#fff;padding:10px}
+  .slide{box-shadow:none;break-inside:avoid}
+}

@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Crawling Bot — Product Report</title>
+<style>
+  :root {
+    --bg:#0a0a14; --panel:#11122099; --panel2:#161732; --line:rgba(124,58,237,.25);
+    --line2:rgba(124,58,237,.5); --v:#a78bfa; --v2:#7c3aed; --red:#f43f5e;
+    --green:#34d399; --amber:#fbbf24; --cyan:#22d3ee; --white:#f3f1ff;
+    --muted:#8b84b0; --faint:#4a4470;
+    --mono:'SFMono-Regular',Consolas,'Liberation Mono',monospace;
+    --sans:'Inter','Segoe UI',system-ui,sans-serif;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html { scroll-behavior:smooth; }
+  body {
+    font-family:var(--sans); color:var(--white); line-height:1.55;
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(124,58,237,.18), transparent 60%),
+      radial-gradient(900px 500px at 0% 100%, rgba(244,63,94,.12), transparent 55%),
+      var(--bg);
+    padding:40px 18px;
+  }
+
+  .deck { max-width:1080px; margin:0 auto; display:flex; flex-direction:column; gap:26px; }
+
+  .slide {
+    background:linear-gradient(155deg, var(--panel2), var(--panel));
+    border:1px solid var(--line); border-radius:18px;
+    padding:34px 40px; position:relative; overflow:hidden;
+    box-shadow:0 8px 40px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.03);
+  }
+  .slide::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:3px;
+    background:linear-gradient(90deg,var(--v2),var(--cyan),var(--red));
+  }
+  .tag {
+    display:inline-block; font-family:var(--mono); font-size:10px; font-weight:700;
+    letter-spacing:.18em; text-transform:uppercase; color:var(--v);
+    background:rgba(124,58,237,.12); border:1px solid var(--line);
+    padding:4px 10px; border-radius:20px; margin-bottom:14px;
+  }
+  h1 { font-size:40px; font-weight:800; letter-spacing:-.02em; line-height:1.1; }
+  h2 { font-size:24px; font-weight:750; letter-spacing:-.01em; margin-bottom:6px; }
+  h3 { font-size:14px; font-weight:700; color:var(--v); margin-bottom:8px;
+       letter-spacing:.02em; }
+  p  { color:var(--muted); font-size:14.5px; }
+  .lead { font-size:16px; color:#cfc8ee; max-width:760px; }
+  .sub { color:var(--faint); font-family:var(--mono); font-size:12px; letter-spacing:.05em; }
+
+  /* Cover */
+  .cover { text-align:center; padding:52px 40px; }
+  .cover .logo {
+    width:64px; height:64px; margin:0 auto 20px; border-radius:16px;
+    display:grid; place-items:center; font-size:30px; font-weight:800;
+    background:linear-gradient(135deg,var(--v2),var(--red)); color:#fff;
+    box-shadow:0 8px 30px rgba(124,58,237,.5);
+  }
+  .cover h1 { font-size:48px; }
+  .cover .meta { margin-top:22px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+  .chip {
+    font-family:var(--mono); font-size:11px; color:#cfc8ee; padding:6px 12px;
+    border:1px solid var(--line2); border-radius:8px; background:rgba(124,58,237,.08);
+  }
+
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  .grid3 { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+  .grid4 { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+
+  .card {
+    background:rgba(10,10,24,.5); border:1px solid var(--line);
+    border-radius:12px; padding:18px;
+  }
+  .card.accent { border-color:var(--line2); background:rgba(124,58,237,.06); }
+
+  .stat .num { font-size:32px; font-weight:800; line-height:1;
+    background:linear-gradient(135deg,var(--v),var(--cyan));
+    -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+  .stat .lbl { font-size:12px; color:var(--muted); margin-top:6px; }
+
+  ul.clean { list-style:none; display:flex; flex-direction:column; gap:9px; }
+  ul.clean li { font-size:14px; color:#d6d0f0; padding-left:22px; position:relative; }
+  ul.clean li::before {
+    content:'▸'; position:absolute; left:0; color:var(--v); font-size:12px; top:2px;
+  }
+  .ok::before  { content:'✓'!important; color:var(--green)!important; }
+  .no::before  { content:'✕'!important; color:var(--red)!important; }
+
+  code, .code {
+    font-family:var(--mono); font-size:12.5px; color:var(--cyan);
+    background:rgba(34,211,238,.08); padding:1px 6px; border-radius:4px;
+  }
+
+  /* Flow diagram */
+  .flow { display:flex; flex-direction:column; gap:10px; }
+  .flow-row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .node {
+    flex:1; min-width:130px; padding:12px 14px; border-radius:10px;
+    border:1px solid var(--line2); background:rgba(124,58,237,.08);
+    font-size:13px; font-weight:600;
+  }
+  .node .n-sub { font-size:11px; color:var(--muted); font-weight:400; margin-top:3px;
+    font-family:var(--mono); }
+  .arrow { color:var(--v); font-size:18px; font-weight:800; }
+
+  /* Boundary table */
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th, td { text-align:left; padding:10px 12px; border-bottom:1px solid var(--line); }
+  th { font-family:var(--mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase;
+       color:var(--v); }
+  td { color:#d6d0f0; }
+  td .lib-s { color:var(--cyan); font-weight:700; }
+  td .lib-p { color:var(--amber); font-weight:700; }
+
+  .split { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .before-after h3 { display:flex; align-items:center; gap:8px; }
+  .pill-before { color:var(--red); }
+  .pill-after  { color:var(--green); }
+
+  .footer { text-align:center; color:var(--faint); font-family:var(--mono);
+    font-size:11px; letter-spacing:.08em; padding-top:6px; }
+
+  @media (max-width:760px){
+    .grid2,.grid3,.grid4,.split { grid-template-columns:1fr; }
+    .slide { padding:24px 20px; }
+    h1 { font-size:30px; } .cover h1 { font-size:34px; }
+  }
+  @media print {
+    body { background:#0a0a14; }
+    .slide { break-inside:avoid; page-break-inside:avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="deck">
+
+  <!-- ░░ COVER ░░ -->
+  <section class="slide cover">
+    <div class="logo">CB</div>
+    <span class="tag">Product / Engineering Report</span>
+    <h1>Crawling Bot</h1>
+    <p class="lead" style="margin:12px auto 0;">
+      Migrating a Facebook OSINT platform to a <strong style="color:#fff;">hybrid
+      Scrapling + Playwright</strong> acquisition layer — without losing GraphQL-based
+      data extraction.
+    </p>
+    <div class="meta">
+      <span class="chip">Python 3.12</span>
+      <span class="chip">Flask Web UI</span>
+      <span class="chip">Scrapling · Playwright</span>
+      <span class="chip">NVIDIA NIM / Ollama</span>
+      <span class="chip">Docker</span>
+    </div>
+  </section>
+
+  <!-- ░░ 1. PROBLEM & GOAL ░░ -->
+  <section class="slide">
+    <span class="tag">01 — Objective</span>
+    <h2>The problem we set out to solve</h2>
+    <p class="lead">The platform scraped Facebook with raw Playwright. The goal: adopt the
+      adaptive scraping framework <code>Scrapling</code> for stronger stealth — <em>without</em>
+      breaking the extraction pipeline.</p>
+
+    <div class="grid2" style="margin-top:22px;">
+      <div class="card">
+        <h3>Key constraint discovered</h3>
+        <p>Facebook does not serve content as HTML. It streams data through internal
+          <strong style="color:#fff;">GraphQL API calls</strong>. The scrapers work by
+          <strong style="color:#fff;">intercepting network responses</strong>
+          (<code>page.on("response")</code>) and walking the JSON — not by parsing the DOM.</p>
+      </div>
+      <div class="card accent">
+        <h3>Why "pure Scrapling" was rejected</h3>
+        <ul class="clean">
+          <li class="no">Scrapling cannot intercept GraphQL network responses</li>
+          <li class="no">Its strength (adaptive HTML selectors) doesn't apply to JSON</li>
+          <li class="no">A full rewrite would <em>discard</em> the most reliable data path</li>
+        </ul>
+      </div>
+    </div>
+    <p style="margin-top:18px;color:#cfc8ee;">
+      <strong style="color:var(--green);">Decision:</strong> a <strong style="color:#fff;">hybrid</strong> —
+      each library used only where it is strictly better.</p>
+  </section>
+
+  <!-- ░░ 2. ARCHITECTURE ░░ -->
+  <section class="slide">
+    <span class="tag">02 — Architecture</span>
+    <h2>Hybrid acquisition layer</h2>
+    <p class="sub">FBSession (scrapling_session.py) — the single integration seam</p>
+
+    <div class="flow" style="margin-top:20px;">
+      <div class="flow-row">
+        <div class="node">Scrapling <span class="n-sub">DynamicSession</span>
+          <div class="n-sub">stealth context · fingerprint · cookie auth</div></div>
+        <span class="arrow">→</span>
+        <div class="node">Persistent Chromium Context
+          <div class="n-sub">launch_persistent_context()</div></div>
+        <span class="arrow">→</span>
+        <div class="node">Raw Playwright Page
+          <div class="n-sub">context.new_page()</div></div>
+      </div>
+      <div class="flow-row" style="margin-top:4px;">
+        <div class="node" style="border-color:var(--line);background:rgba(34,211,238,.06);">
+          page.on("response") <div class="n-sub">GraphQL JSON capture</div></div>
+        <div class="node" style="border-color:var(--line);background:rgba(34,211,238,.06);">
+          page.evaluate() <div class="n-sub">scroll · expand · click</div></div>
+        <div class="node" style="border-color:var(--line);background:rgba(34,211,238,.06);">
+          JSON tree walk <div class="n-sub">posts · comments · photos · reels</div></div>
+      </div>
+    </div>
+
+    <p style="margin-top:20px;color:#cfc8ee;">
+      <code>FBSession</code> yields a plain Playwright <code>Page</code>, so every existing
+      <code>goto / on / evaluate / screenshot</code> call works <strong style="color:#fff;">unchanged</strong>.
+      Scrapling owns acquisition; Playwright owns data capture.</p>
+  </section>
+
+  <!-- ░░ 3. RESPONSIBILITY BOUNDARY ░░ -->
+  <section class="slide">
+    <span class="tag">03 — Design Boundary</span>
+    <h2>Who handles what — and why</h2>
+    <table style="margin-top:16px;">
+      <thead><tr><th>Concern</th><th>Handled by</th><th>Rationale</th></tr></thead>
+      <tbody>
+        <tr><td>Browser launch &amp; stealth</td><td><span class="lib-s">Scrapling</span></td>
+          <td>Real UA generation, fingerprint spoofing, automation masking</td></tr>
+        <tr><td>Cookie injection / session auth</td><td><span class="lib-s">Scrapling</span></td>
+          <td>Cookies injected into persistent context before any load</td></tr>
+        <tr><td>GraphQL response capture</td><td><span class="lib-p">Playwright</span></td>
+          <td>Scroll-driven loops need a persistent page with live listeners</td></tr>
+        <tr><td>DOM interaction (scroll/expand)</td><td><span class="lib-p">Playwright</span></td>
+          <td>Direct JS injection for comment expansion &amp; infinite scroll</td></tr>
+        <tr><td>Report HTML → PNG render</td><td><span class="lib-p">Playwright</span></td>
+          <td>Local file render; no Facebook, no stealth needed</td></tr>
+        <tr><td>Cookie harvesting (fresh login)</td><td><span class="lib-s">Scrapling</span></td>
+          <td>Clean stealth context, then read <code>context.cookies()</code></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ░░ 4. SCOPE OF CHANGE ░░ -->
+  <section class="slide">
+    <span class="tag">04 — Results</span>
+    <h2>Scope &amp; measurable outcomes</h2>
+    <div class="grid4" style="margin-top:18px;">
+      <div class="card stat"><div class="num">9</div><div class="lbl">scrapers + tools migrated to FBSession</div></div>
+      <div class="card stat"><div class="num">2</div><div class="lbl">files still use raw Playwright (by design)</div></div>
+      <div class="card stat"><div class="num">1</div><div class="lbl">new integration module (scrapling_session.py)</div></div>
+      <div class="card stat"><div class="num">100%</div><div class="lbl">extraction logic preserved unchanged</div></div>
+    </div>
+
+    <div class="grid2" style="margin-top:18px;">
+      <div class="card">
+        <h3>Migrated to Scrapling FBSession</h3>
+        <ul class="clean">
+          <li class="ok">fb_about · fb_posts · fb_photos · fb_reels</li>
+          <li class="ok">fb_manual_unified (batch)</li>
+          <li class="ok">commentor_country · commentor_scoring</li>
+          <li class="ok">Cookie tooling — check / refresh / sign-in</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Deliberately kept on raw Playwright</h3>
+        <ul class="clean">
+          <li><code>pw_utils.py</code> — type hints + all extractors</li>
+          <li><code>threat_report.py</code> — local HTML → PNG render</li>
+        </ul>
+        <p style="margin-top:10px;font-size:12.5px;">These touch no Facebook session, so Scrapling
+          would add cost with no benefit.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ░░ 5. CODE TRANSFORMATION ░░ -->
+  <section class="slide">
+    <span class="tag">05 — Implementation</span>
+    <h2>Minimal, surgical change</h2>
+    <p class="lead">Each scraper swapped only its browser-launch block. The data loop is untouched.</p>
+    <div class="split" style="margin-top:18px;">
+      <div class="card before-after">
+        <h3 class="before-after"><span class="pill-before">●</span> Before</h3>
+        <pre style="font-family:var(--mono);font-size:12px;color:#c9b8d8;
+             white-space:pre-wrap;line-height:1.7;">with sync_playwright() as pw:
+  browser, ctx = pw_utils.launch_browser(pw)
+  page = ctx.new_page()
+  pw_utils.login(page, COOKIE_FILE)
+  ... scrape loop ...
+  browser.close()</pre>
+      </div>
+      <div class="card before-after accent">
+        <h3 class="before-after"><span class="pill-after">●</span> After</h3>
+        <pre style="font-family:var(--mono);font-size:12px;color:#d9c8ff;
+             white-space:pre-wrap;line-height:1.7;">with FBSession(
+       cookie_file=COOKIE_FILE,
+       headless=True) as page:
+  ... same scrape loop ...
+  # context closes automatically</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ░░ 6. DEPLOYMENT FIX ░░ -->
+  <section class="slide">
+    <span class="tag">06 — Infrastructure</span>
+    <h2>Docker: eliminated a redundant browser download</h2>
+    <div class="grid2" style="margin-top:16px;">
+      <div class="card">
+        <h3>Root cause</h3>
+        <p><code>scrapling install</code> internally runs
+          <code>playwright install chromium</code>. The Dockerfile was installing Chromium
+          <strong style="color:var(--red);">twice</strong>.</p>
+      </div>
+      <div class="card accent">
+        <h3>Fix</h3>
+        <ul class="clean">
+          <li class="ok">Collapsed to a single <code>scrapling install</code></li>
+          <li class="ok">One Chromium serves Scrapling + report render</li>
+          <li class="ok"><code>PLAYWRIGHT_BROWSERS_PATH</code> set before install</li>
+        </ul>
+      </div>
+    </div>
+    <p style="margin-top:16px;color:#cfc8ee;"><strong style="color:var(--green);">Outcome:</strong>
+      smaller image, faster build, no install/runtime path ambiguity.</p>
+  </section>
+
+  <!-- ░░ 7. ADDITIONAL DELIVERABLES ░░ -->
+  <section class="slide">
+    <span class="tag">07 — Additional Work</span>
+    <h2>Rebrand &amp; bilingual UI</h2>
+    <div class="grid3" style="margin-top:18px;">
+      <div class="card">
+        <h3>Full rebrand</h3>
+        <p>Every identifier, comment, label, banner, and the README migrated to
+          <strong style="color:#fff;">Crawling Bot</strong>; prior attribution stripped.</p>
+      </div>
+      <div class="card">
+        <h3>EN / VI language toggle</h3>
+        <p>Session-based i18n: <code>translations.py</code> dictionaries, a
+          <code>_()</code> Jinja2 helper, and a nav-bar toggle button
+          (<span class="code">🇬🇧 EN ⇄ 🇻🇳 VI</span>).</p>
+      </div>
+      <div class="card">
+        <h3>Accurate docs</h3>
+        <p>README rewritten with architecture diagrams describing the real hybrid +
+          GraphQL-interception design.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ░░ 8. CONCLUSION ░░ -->
+  <section class="slide">
+    <span class="tag">08 — Conclusion</span>
+    <h2>What the hybrid achieves</h2>
+    <div class="grid2" style="margin-top:18px;">
+      <div class="card accent">
+        <h3>Gains</h3>
+        <ul class="clean">
+          <li class="ok">Scrapling-grade stealth &amp; fingerprint spoofing</li>
+          <li class="ok">GraphQL JSON extraction fully retained</li>
+          <li class="ok">Zero change to extraction / analysis logic</li>
+          <li class="ok">Leaner, faster, unambiguous Docker build</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Engineering principle</h3>
+        <p class="lead" style="font-size:15px;">Adopt a new tool for what it does
+          <em>better</em> — not as a wholesale replacement. The right boundary preserved a
+          working system while upgrading its weakest layer.</p>
+      </div>
+    </div>
+    <p class="footer" style="margin-top:24px;">Crawling Bot · Facebook OSINT Platform ·
+      Hybrid Scrapling + Playwright · Confidential</p>
+  </section>
+
+</div>
+</body>
+</html>

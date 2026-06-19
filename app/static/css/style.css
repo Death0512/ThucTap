@@ -99,6 +99,15 @@ body::after {
 }
 .nav-home-btn:hover { color: var(--off); border-color: var(--border2); }
 
+.lang-switcher { display: flex; align-items: center; }
+.lang-btn {
+  font-family: var(--font-sanf-serif); font-size: 9px; font-weight: 700;
+  color: var(--muted); background: transparent; border: 1px solid var(--faint);
+  border-radius: 4px; padding: 4px 8px; cursor: pointer; letter-spacing: 0.04em;
+  transition: all 0.2s; line-height: 1;
+}
+.lang-btn:hover { color: var(--off); border-color: var(--border2); }
+
 /* Pills */
 .npill { font-family: var(--font-sanf-serif); font-size: 8px; font-weight: 700; padding: 3px 9px; border-radius: 4px; letter-spacing: 0.08em; text-transform: uppercase; }
 .np-live  { background: rgba(5,150,105,0.14); color: var(--green3); border: 1px solid rgba(5,150,105,0.3); }

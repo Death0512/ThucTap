@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Crawling Bot — Báo cáo sản phẩm</title>
+<link rel="stylesheet" href="baocao_style.css" />
+</head>
+<body>
+<div class="deck">
+
+  <!-- ░ COVER ░ -->
+  <section class="slide cover">
+    <!-- <div class="logo"></div>
+    <span class="tag"></span> -->
+    <h1>Crawling Bot</h1>
+    <p class="lead" style="margin:14px auto 0;max-width:680px">
+      Nền tảng <strong>thu thập &amp; phân tích thông tin Facebook (OSINT)</strong>
+      bằng AI — chạy 100% nội bộ, biến hàng nghìn bình luận hỗn loạn thành insight gọn gàng.
+    </p>
+    <div class="chips">
+      <span class="chip">AI phân tích</span>
+      <span class="chip">Scrapling Stealth</span>
+      <span class="chip">Báo cáo tự động</span>
+    </div>
+  </section>
+
+  <!-- ░ 1. CONCEPT ░ -->
+  <section class="slide">
+
+    <h2>Crawling Bot là gì?</h2>
+    <p class="lead">Một "thám tử số" tự động: chỉ cần dán link một hồ sơ Facebook hoặc một loạt
+      bài viết, hệ thống sẽ tự động thu thập → tự phân tích bằng AI →
+      tự dựng báo cáo. Bạn nhận về bức tranh toàn cảnh về một người hoặc một mạng lưới
+      tương tác, thay vì phải đọc tay từng bình luận.</p>
+
+    <div class="grid3" style="margin-top:22px">
+      <div class="card pop"><span class="ic"></span>
+        <h3>Đầu vào</h3>
+        <p>Một URL hồ sơ, hoặc tối đa 15 link bài viết/ảnh/reel</p></div>
+      <div class="card pop"><span class="ic"></span>
+        <h3>Quy trình tự động</h3>
+        <p>5 giai đoạn chạy ngầm: thu thập, nhập dữ liệu, phân tích AI, dựng tình báo, xuất báo cáo.</p></div>
+      <div class="card pop"><span class="ic"></span>
+        <h3>Đầu ra</h3>
+        <p>Bảng điều khiển trực quan + sơ đồ mạng lưới tương tác + báo cáo PDF chuyên nghiệp.</p></div>
+    </div>
+  </section>
+
+  <!-- ░ 2. STRENGTHS vs TRADITIONAL ░ -->
+  <section class="slide">
+    <h2>So với cách làm truyền thống</h2>
+    <table>
+      <thead><tr><th>Tiêu chí</th><th>Cách truyền thống</th><th>Crawling Bot</th></tr></thead>
+      <tbody>
+        <tr><td>Thu thập dữ liệu</td>
+          <td class="old">Copy-paste thủ công, mỏi tay, dễ sót</td>
+          <td class="new">Tự động bóc tách từ GraphQL của Facebook</td></tr>
+        <tr><td>Độ tin cậy dữ liệu</td>
+          <td class="old">Parse HTML — vỡ ngay khi giao diện đổi</td>
+          <td class="new">Lấy JSON gốc — ổn định hơn nhiều</td></tr>
+        <tr><td>Né phát hiện bot</td>
+          <td class="old">Selenium thô, dễ bị chặn</td>
+          <td class="new">Scrapling giả lập vân tay trình duyệt thật</td></tr>
+        <tr><td>Phân tích nội dung</td>
+          <td class="old">Đọc tay từng bình luận, cảm tính</td>
+          <td class="new">AI chấm cảm xúc, quan điểm, ngôn ngữ tự động</td></tr>
+        <tr><td>Tổng hợp kết quả</td>
+          <td class="old">Excel + ghi chú rời rạc</td>
+          <td class="new">Dashboard + sơ đồ mạng + PDF một cú nhấp</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ░ 3. UI FEATURES (part 1) ░ -->
+  <section class="slide">
+    <h2>Giao diện</h2>
+
+    <div class="feat">
+      <!-- <div class="badge">🏠</div> -->
+      <div class="body"><h3>Trang chủ — Bảng điều khiển</h3>
+        <p>Trung tâm điều khiển: trạng thái hệ thống (AI online? cookie còn hạn?), nút tạo điều tra
+          mới, danh sách các cuộc điều tra đã làm, chọn mô hình AI, và khu vực công cụ hệ thống.</p>
+        <span class="route">/</span></div>
+    </div>
+    <div class="feat">
+      <!-- <div class="badge">🔍</div> -->
+      <div class="body"><h3>Điều tra hồ sơ (Profile Investigation)</h3>
+        <p>Dán link một hồ sơ Facebook, chọn mức quét <code>Nhẹ / Trung bình / Sâu</code> (5–20
+          bài/ảnh/reel). Hệ thống tự thu thập About, bài viết, ảnh, reel cùng toàn bộ bình luận và
+          người bình luận.</p>
+        <span class="route">/scan/new</span></div>
+    </div>
+    <div class="feat">
+      <!-- <div class="badge">📦</div> -->
+      <div class="body"><h3>Điều tra hàng loạt (Batch)</h3>
+        <p>Dán tối đa 15 link bài viết / ảnh / reel bất kỳ (không cần cùng một người). Phù hợp khi
+          muốn phân tích một chiến dịch, một sự kiện hay một nhóm nội dung cụ thể.</p>
+        <span class="route">/batch/new</span></div>
+    </div>
+    <div class="feat">
+      <!-- <div class="badge">📊</div> -->
+      <div class="body"><h3>Dashboard kết quả</h3>
+        <p>Theo dõi tiến độ 5 giai đoạn theo thời gian thực, xem số liệu tổng quan (số bài, bình
+          luận, người bình luận, khuôn mặt) và truy cập nhanh tới các trang chi tiết.</p>
+        <span class="route">/profile/&lt;id&gt; · /batch/&lt;id&gt;</span></div>
+    </div>
+  </section>
+
+  <!-- ░ 4. UI FEATURES (part 2) ░ -->
+  <section class="slide">
+    <!-- <span class="tag">03 — Chức năng UI</span> -->
+    <h2>Khám phá giao diện</h2>
+
+    <div class="feat">
+      <!-- <div class="badge">💬</div> -->
+      <div class="body"><h3>Tình báo tương tác (Interactions)</h3>
+        <p>Mọi bình luận được AI chấm điểm: <strong>cảm xúc</strong> (tích cực/tiêu cực/trung tính),
+          <strong>quan điểm</strong> (ủng hộ/phản đối), <strong>cảm xúc chi tiết</strong> và
+          <strong>ngôn ngữ</strong>. Giúp nắm bắt thái độ đám đông trong vài giây.</p>
+        <span class="route">/profile/&lt;id&gt;/interactions</span></div>
+    </div>
+    <div class="feat">
+      <!-- <div class="badge">🕸️</div> -->
+      <div class="body"><h3>Mạng lưới &amp; chấm điểm tác nhân</h3>
+        <p>Sơ đồ tương tác (force-directed + ma trận đồng-bình-luận) cho thấy ai liên kết với ai.
+          Mỗi người bình luận được xếp hạng <strong>5 bậc</strong> theo điểm tổng
+          hợp, kèm <strong>phát hiện quốc gia</strong> bằng AI.</p>
+        <span class="route">/profile/&lt;id&gt;/network</span></div>
+    </div>
+    <div class="feat">
+      <!-- <div class="badge">👤</div> -->
+      <div class="body"><h3>Tình báo khuôn mặt (Face Intelligence)</h3>
+        <p>Phát hiện khuôn mặt trong mọi ảnh, mã hóa vector 128 chiều và
+          <strong>gom cụm danh tính</strong> — nhận ra cùng một người xuất hiện ở nhiều ảnh khác nhau.</p>
+        <span class="route">/profile/&lt;id&gt;/faces</span></div>
+    </div>
+    <div class="feat">
+      <!-- <div class="badge">🛠️</div> -->
+      <div class="body"><h3>Bộ công cụ hệ thống</h3>
+        <p><strong>Nhập Cookie</strong> (qua Cookie-Editor) ·
+          <strong>Làm mới Cookie</strong> (đăng nhập thủ công) ·
+          <strong>Dọn dẹp CSDL</strong> · chọn mô hình AI ·
+        <span class="route">/tools/import-cookies · /tools/db-cleaner</span></div>
+    </div>
+  </section>
+
+  <!-- ░ 5. HOW IT COLLECTS DATA ░ -->
+  <section class="slide">
+    <!-- <span class="tag">04 — Thu thập dữ liệu</span> -->
+    <h2>Cách crawl dữ liệu </h2>
+    <p class="lead">Điểm mấu chốt: Facebook không trả về HTML thuần — nó truyền dữ liệu qua các lời
+      gọi <strong>GraphQL nội bộ</strong>. Crawling Bot bắt đúng các phản hồi mạng
+      đó (JSON gốc) thay vì cào giao diện, nên dữ liệu sạch và bền hơn.</p>
+
+    <div class="pipe" style="margin-top:22px">
+      <div class="step"><div class="s-n">B1</div><div class="s-t">Phiên ẩn danh</div>
+        <div class="s-d">Scrapling dựng trình duyệt giả vân tay + nạp cookie</div></div>
+      <div class="arr">→</div>
+      <div class="step"><div class="s-n">B2</div><div class="s-t">Bắt GraphQL</div>
+        <div class="s-d">Playwright nghe phản hồi mạng khi cuộn trang</div></div>
+      <div class="arr">→</div>
+      <div class="step"><div class="s-n">B3</div><div class="s-t">Bóc JSON</div>
+        <div class="s-d">Duyệt cây JSON: bài, bình luận, ảnh, reel</div></div>
+      <div class="arr">→</div>
+      <div class="step"><div class="s-n">B4</div><div class="s-t">AI xử lý</div>
+        <div class="s-d">Chấm cảm xúc, OCR ảnh, nhận diện khuôn mặt</div></div>
+      <div class="arr">→</div>
+      <div class="step"><div class="s-n">B5</div><div class="s-t">Báo cáo</div>
+        <div class="s-d">Dashboard + sơ đồ + PDF</div></div>
+    </div>
+
+    <div class="grid3" style="margin-top:22px">
+      <div class="card"><span class="ic"></span><h3>Ẩn mình tốt hơn</h3>
+        <p>Giả lập trình duyệt thật giúp giảm rủi ro bị chặn so với automation thô.</p></div>
+      <div class="card"><span class="ic"></span><h3>Dữ liệu gốc</h3>
+        <p>Lấy đúng JSON Facebook dùng nội bộ — đầy đủ tên, link, nội dung, thời gian.</p></div>
+      <div class="card"><span class="ic"></span><h3>Có lớp dự phòng</h3>
+        <p>Nếu GraphQL đổi, hệ thống tự lùi về bóc tách DOM để không mất dữ liệu.</p></div>
+    </div>
+  </section>
+
+  <!-- ░ 6. CAPABILITIES ░ -->
+  <section class="slide">
+    <!-- <span class="tag">05 — Năng lực</span> -->
+    <h2>Đóng góp</h2>
+    <div class="grid4" style="margin-top:18px">
+      <div class="card stat"><div class="num">5</div><div class="lbl">giai đoạn tự động trong pipeline</div></div>
+      <div class="card stat"><div class="num">4</div><div class="lbl">chiều phân tích / bình luận: cảm xúc · quan điểm · cảm giác · ngôn ngữ</div></div>
+      <div class="card stat"><div class="num">5</div><div class="lbl">bậc xếp hạng tác nhân theo điểm tổng hợp</div></div>
+      <div class="card stat"><div class="num">128</div><div class="lbl">chiều vector mã hóa mỗi khuôn mặt</div></div>
+    </div>
+    <div class="grid2" style="margin-top:18px">
+      <div class="card pop"><h3>Thu thập đa định dạng</h3>
+        <ul class="clean">
+          <li class="ok">Bài viết, ảnh, reel + caption &amp; thời gian</li>
+          <li class="ok">Toàn bộ bình luận + tên &amp; link người bình luận</li>
+          <li class="ok">Thông tin About: nơi ở, quê, công việc, học vấn</li>
+        </ul></div>
+      <div class="card pop"><h3>Phân tích thông minh</h3>
+        <ul class="clean">
+          <li class="star">OCR ảnh đa ngôn ngữ (Anh, Việt, Ả Rập, Hindi…)</li>
+          <li class="star">Nhận diện quốc gia từ tín hiệu hồ sơ</li>
+          <li class="star">Gom cụm khuôn mặt &amp; dựng mạng lưới quan hệ</li>
+        </ul></div>
+    </div>
+  </section>
+
+  <!-- ░ 7. IMPROVEMENT ░ -->
+  <section class="slide">
+    <!-- <span class="tag">06 — Hướng phát triển</span> -->
+    <h2>Điểm cần cải thiện</h2>
+    <div class="grid2" style="margin-top:18px">
+      <div class="card">
+        <h3>⚠️ Hạn chế hiện tại</h3>
+        <ul class="clean">
+          <li class="no">Phụ thuộc cookie hợp lệ — hết hạn phải nhập lại</li>
+          <li class="no">Bóc tách dễ vỡ khi Facebook đổi GraphQL/giao diện</li>
+          <li class="no">Chưa có bộ kiểm thử tự động (test) cho scraper</li>
+          <li class="no">AI mặc định gọi NVIDIA NIM (cần khóa API/cấu hình)</li>
+        </ul>
+      </div>
+      <div class="card pop">
+        <h3>🌱 Định hướng nâng cấp</h3>
+        <ul class="clean">
+          <li class="star">Tự động cảnh báo &amp; làm mới cookie thông minh</li>
+          <li class="star">Bộ chọn thích ứng (Scrapling adaptive) cho lớp dự phòng</li>
+          <li class="star">Thêm test tự động để chống "vỡ" khi FB đổi</li>
+          <li class="star">Hỗ trợ thêm nguồn OSINT ngoài Facebook</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ░ 8. CLOSING ░ -->
+  <!-- <section class="slide cover">
+    <span class="tag">07 — Tóm lại</span>
+    <div class="quote" style="text-align:left;margin:8px auto 0;max-width:760px">
+      “Crawling Bot biến công việc OSINT thủ công, tốn hàng giờ, thành một quy trình
+      <strong>tự động, nhanh và an toàn</strong> — từ một cú dán link đến một báo cáo
+      tình báo hoàn chỉnh.”
+    </div>
+    <div class="chips" style="margin-top:26px">
+      <span class="chip">⚡ Tự động hóa</span>
+      <span class="chip">🧠 AI insight</span>
+      <span class="chip">🔒 An toàn nội bộ</span>
+      <span class="chip">🇻🇳 Song ngữ Việt–Anh</span>
+    </div>
+    <p class="footer" style="margin-top:28px">Crawling Bot · Nền tảng OSINT Facebook ·
+      Báo cáo sản phẩm · Bảo mật</p>
+  </section> -->
+
+</div>
+</body>
+</html>

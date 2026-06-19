@@ -1,6 +1,7 @@
 """
-fb_photos.py — Facebook photo scraper (Playwright + GraphQL).
-Replaces fb_photos_sb.py (SeleniumBase).
+fb_photos.py — Facebook photo scraper.
+Acquisition: Scrapling stealth session (FBSession) driving a Playwright page;
+data extracted from intercepted GraphQL responses, DOM as fallback.
 """
 
 import json

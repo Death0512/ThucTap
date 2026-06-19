@@ -7,7 +7,7 @@ import subprocess
 import threading
 import urllib.request
 from datetime import datetime
-from flask import Flask, render_template, request, jsonify, redirect, url_for, Response, send_file
+from flask import Flask, render_template, request, jsonify, redirect, url_for, Response, send_file, session
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY') or os.urandom(32)
@@ -20,6 +20,7 @@ REPORTS_DIR    = os.path.join(BASE_DIR, 'reports')
 ICONS_DIR      = os.path.join(BASE_DIR, 'icons')
 
 import llm_client
+from translations import t, available_languages
 
 LLM_MODEL_NAME = llm_client.LLM_MODEL
 
@@ -801,16 +802,20 @@ def run_pipeline_auto(profile_url, profile_id, scan_type):
 
         sys.path.insert(0, BASE_DIR)
 
-        import multiprocessing
+        import time, random
         import fb_about, fb_photos, fb_reels, fb_posts
 
-        p1 = multiprocessing.Process(target=fb_about.main,  args=(profile_url,))
-        p2 = multiprocessing.Process(target=fb_reels.main,  args=(profile_url, limits['reels']))
-        p3 = multiprocessing.Process(target=fb_photos.main, args=(profile_url, limits['photos']))
-        p4 = multiprocessing.Process(target=fb_posts.main,  args=(profile_url, limits['posts']))
-
-        for p in [p1, p2, p3, p4]: p.start()
-        for p in [p1, p2, p3, p4]: p.join()
+        # Sequential to avoid FB rate-limiting a single account with 4 simultaneous
+        # requests — each phase opens a new session with the same cookie file.
+        phases = [
+            (fb_about.main,  (profile_url,)),
+            (fb_reels.main,  (profile_url, limits['reels'])),
+            (fb_photos.main, (profile_url, limits['photos'])),
+            (fb_posts.main,  (profile_url, limits['posts'])),
+        ]
+        for fn, args in phases:
+            fn(*args)
+            time.sleep(random.uniform(4.0, 8.0))
 
         write_status(key, {**read_status(key), 'gathering_done': True})
 
@@ -987,6 +992,25 @@ def run_pipeline_manual(batch_id, label, urls, scan_type='medium'):
     except Exception as e:
         write_status(key, {**read_status(key), 'error': str(e), 'phase': 'error'})
         print(f"[Pipeline Error] batch_{batch_id}: {e}")
+
+#  LANGUAGE SUPPORT
+
+@app.context_processor
+def inject_language():
+    """Inject _() translation helper and current lang into all templates."""
+    lang = session.get('lang', 'en')
+    def _(key: str) -> str:
+        return t(key, lang)
+    return dict(_=_, lang=lang, LANGUAGES=available_languages())
+
+
+@app.route('/api/lang/<code>')
+def set_language(code):
+    """Toggle language: /api/lang/en or /api/lang/vi"""
+    if code in ('en', 'vi'):
+        session['lang'] = code
+    return redirect(request.referrer or url_for('home'))
+
 
 #  ROUTES
 

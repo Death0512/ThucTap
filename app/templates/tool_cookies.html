@@ -91,42 +91,41 @@
 {% block content %}
 <div class="tool-page">
 
-  <div class="tool-title">🍪 Refresh Session Cookies</div>
-  <div class="tool-sub">Authenticate your Facebook session for Crawling Bot</div>
+  <div class="tool-title">🍪 {{ _('tool_cookies_title') }}</div>
+  <div class="tool-sub">{{ _('tool_cookies_sub') }}</div>
 
   <div class="info-card">
-    <div class="info-card-title">How it works</div>
+    <div class="info-card-title">{{ _('how_it_works') }}</div>
     <ul class="info-list">
-      <li><span>1️⃣</span> Click Start — a Chrome browser window will open Facebook</li>
-      <li><span>2️⃣</span> Log in manually with your credentials in that window</li>
-      <li><span>3️⃣</span> Complete any CAPTCHA if prompted</li>
-      <li><span>4️⃣</span> Wait for the 60-second countdown to finish — cookies are saved automatically</li>
-      <li><span>5️⃣</span> Do NOT close the browser window manually during the countdown</li>
+      <li><span>1️⃣</span> {{ _('cookies_step1') }}</li>
+      <li><span>2️⃣</span> {{ _('cookies_step2') }}</li>
+      <li><span>3️⃣</span> {{ _('cookies_step3') }}</li>
+      <li><span>4️⃣</span> {{ _('cookies_step4') }}</li>
+      <li><span>5️⃣</span> {{ _('cookies_step5') }}</li>
     </ul>
   </div>
 
   <div class="warn-card">
-    ⚠️ <strong>Important:</strong> The browser window will stay open for exactly 60 seconds.
-    Do not force-close it — let the countdown complete. Closing early will discard your session.
+    {{ _('cookies_warning') }}
   </div>
 
   <div class="action-card">
 
     <div class="status-badge {{ 'badge-ok' if cookies_ok else 'badge-miss' }}">
       <div class="badge-dot"></div>
-      <span>Session {{ 'Active — cookies found' if cookies_ok else 'Missing — no cookies file' }}</span>
+      <span>{% if cookies_ok %}{{ _('session_found') }}{% else %}{{ _('session_missing_file') }}{% endif %}</span>
     </div>
 
     <div id="idle-section">
       <button class="start-btn" onclick="startRefresh()" id="start-btn">
-        🔐 Start Cookie Refresh
+        🔐 {{ _('start_refresh') }}
       </button>
     </div>
 
     <div id="countdown-section" style="display:none;">
       <div class="countdown-wrap">
         <div class="countdown-num" id="cd-num">60</div>
-        <div class="countdown-lbl">Seconds remaining — log in now</div>
+        <div class="countdown-lbl">{{ _('seconds_remaining') }}</div>
         <div class="countdown-bar">
           <div class="countdown-fill" id="cd-fill" style="width:100%"></div>
         </div>
@@ -138,15 +137,15 @@
     </div>
 
     <div id="done-section" style="display:none;">
-      <div class="done-card">✅ Cookies saved successfully! Your session is now active.</div>
+      <div class="done-card">{{ _('saving_cookies') }}</div>
       <button class="start-btn" onclick="window.location.href='/'" style="margin-top:16px;background:linear-gradient(135deg,#059669,#047857);">
-        ← Back to Home
+        ← {{ _('go_home') }}
       </button>
     </div>
 
     <div id="err-section" style="display:none;">
-      <div class="err-card" id="err-msg">An error occurred.</div>
-      <button class="start-btn" onclick="location.reload()" style="margin-top:16px;">Retry</button>
+      <div class="err-card" id="err-msg">{{ _('an_error_occurred') }}</div>
+      <button class="start-btn" onclick="location.reload()" style="margin-top:16px;">{{ _('retry') }}</button>
     </div>
 
   </div>
@@ -154,7 +153,7 @@
   <div class="reminder-card">
     <div class="reminder-icon">🗓️</div>
     <div class="reminder-text">
-      <strong>Refresh every 2 days</strong> — Facebook sessions expire regularly.
+      <strong>{{ _('refresh_every_2') }}</strong> — Facebook sessions expire regularly.
       If scraping returns 0 results or "Log in" errors appear, refresh your cookies.
       Bookmark this page for quick access.
     </div>
@@ -169,7 +168,7 @@ let polling = null;
 
 function startRefresh() {
   document.getElementById('start-btn').disabled = true;
-  document.getElementById('start-btn').textContent = 'Starting...';
+  document.getElementById('start-btn').textContent = '{{ _("starting_dots_upper") }}';
 
   fetch('/api/tools/refresh-cookies/start', { method: 'POST' })
     .then(r => r.json())
@@ -205,9 +204,9 @@ function showErr(msg) {
   document.getElementById('countdown-section').style.display = 'none';
   document.getElementById('idle-section').style.display = 'block';
   document.getElementById('err-section').style.display = 'block';
-  document.getElementById('err-msg').textContent = '❌ Error: ' + msg;
+  document.getElementById('err-msg').textContent = '❌ {{ _("error_prefix") }}: ' + msg;
   document.getElementById('start-btn').disabled = false;
-  document.getElementById('start-btn').textContent = '🔐 Start Cookie Refresh';
+  document.getElementById('start-btn').textContent = '🔐 {{ _("start_refresh") }}';
 }
 </script>
 {% endblock %}

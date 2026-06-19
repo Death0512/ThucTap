@@ -1,6 +1,7 @@
 """
-fb_posts.py — Facebook text-post scraper (Playwright + GraphQL).
-Replaces fb_posts_sb.py (SeleniumBase).
+fb_posts.py — Facebook text-post scraper.
+Acquisition: Scrapling stealth session (FBSession) driving a Playwright page;
+data extracted from intercepted GraphQL responses, DOM as fallback.
 """
 
 import json

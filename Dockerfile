@@ -2,8 +2,8 @@
 # Crawling Bot — Dockerfile
 # Base: Ubuntu 24.04 LTS
 # Python: 3.12
-# Browser: Playwright Chromium (replaces SeleniumBase + Brave)
-# LLM: NVIDIA NIM via OpenCode config
+# Scraping: Scrapling (stealth context) + Playwright Chromium (GraphQL capture)
+# LLM: NVIDIA NIM via OpenCode config (Ollama optional)
 # ══════════════════════════════════════════════════════════════════════════════
 
 FROM ubuntu:24.04
@@ -50,7 +50,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     tesseract-ocr-ara \
     tesseract-ocr-urd \
     tesseract-ocr-eng \
-    # Playwright system dependencies
+    # Chromium system dependencies (for Scrapling + Playwright)
     libglib2.0-0 \
     libnss3 \
     libnspr4 \
@@ -109,14 +109,16 @@ RUN pip install \
     tqdm \
     opencv-python
 
-# Install Playwright and download Chromium browser
-# playwright install-deps runs apt-get internally, so we need the cache available
-RUN apt-get update && playwright install-deps chromium && rm -rf /var/lib/apt/lists/*
-RUN playwright install chromium
+# Install browser into a fixed path shared by install-time and runtime.
+ENV PLAYWRIGHT_BROWSERS_PATH=/root/.cache/ms-playwright
 
-# Install Scrapling's fetcher browser dependencies (fingerprint / stealth deps).
-# Scrapling's DynamicSession drives the Chromium installed above.
-RUN scrapling install || true
+# Download Chromium + its system dependencies + TLD list in ONE step.
+# `scrapling install` runs `playwright install chromium` + `playwright install-deps
+# chromium` internally, so this single command serves BOTH:
+#   • Scrapling's DynamicSession (browser acquisition / stealth context)
+#   • threat_report.py's standalone Playwright (renders report HTML → PNG)
+# install-deps runs apt-get internally, so the apt cache must be available here.
+RUN apt-get update && scrapling install && rm -rf /var/lib/apt/lists/*
 
 # ══════════════════════════════════════════════════════════════════════════════
 # LAYER 3 — dlib (compiled from source)
@@ -172,7 +174,6 @@ COPY app/ /app/
 
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
-ENV PLAYWRIGHT_BROWSERS_PATH=/root/.cache/ms-playwright
 
 # ══════════════════════════════════════════════════════════════════════════════
 # LAYER 6 — Entrypoint

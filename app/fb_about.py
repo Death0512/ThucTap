@@ -1,6 +1,7 @@
 """
-fb_about.py — Facebook profile About scraper (Playwright + GraphQL).
-Replaces fb_about_sb.py (SeleniumBase).
+fb_about.py — Facebook profile About scraper.
+Acquisition: Scrapling stealth session (FBSession) driving a Playwright page;
+data extracted from intercepted GraphQL responses, DOM as fallback.
 """
 
 import json
@@ -153,7 +154,7 @@ def main(profile_url: str = ""):
         profile_url = input("Enter profile URL: ").strip()
 
     print("\n" + "═" * 65)
-    print("Facebook About Scraper (Playwright + GraphQL)")
+    print("Facebook About Scraper (Scrapling + GraphQL)")
     print(f"Profile: {profile_url}")
     print("═" * 65)
 

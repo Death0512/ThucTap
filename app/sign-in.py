@@ -1,5 +1,5 @@
 """
-sign-in.py — Manual session verification tool using Playwright.
+sign-in.py — Manual session verification tool (Scrapling stealth session).
 Loads fb_cookies.json and checks if the session is still active on Facebook.
 """
 

@@ -129,14 +129,12 @@ def get_comment_language(con, commentor_id):
     return None
 
 
-#  QUICK SCRAPE — 3 sections, 3 profiles parallel using multiprocessing
-
-BATCH_SIZE = 3  # parallel browser sessions — safe on 8GB RAM
+#  QUICK SCRAPE — 3 sections per profile, sequential to avoid rate limits
 
 
 def _scrape_single_profile(args):
     """
-    Worker function for multiprocessing.
+    Worker function that opens a Stealth browser session per profile.
     Scrapes 3 sections for ONE profile and returns result dict.
     """
     import re
@@ -238,60 +236,27 @@ def _scrape_single_profile(args):
 
 def scrape_personal_details_batch(commentor_list):
     """
-    Scrape 3 sections for all commentors using multiprocessing batches of 3.
-    Each batch runs 3 browser sessions in parallel then merges results.
+    Scrape 3 sections for every commentor sequentially to avoid FB rate-limiting
+    a single account with parallel browser sessions.
     Returns dict: {commentor_id: {current_city, hometown, employer, education}}
     """
-    from multiprocessing import Pool
-    import os
+    import random
 
     results = {}
     total   = len(commentor_list)
 
-    print(f"   Scraping {total} profiles in batches of {BATCH_SIZE}...")
+    print(f"   Scraping {total} profiles sequentially...")
 
-    for i in range(0, total, BATCH_SIZE):
-        batch = commentor_list[i:i+BATCH_SIZE]
-        batch_num = i // BATCH_SIZE + 1
-        total_batches = (total + BATCH_SIZE - 1) // BATCH_SIZE
-
-        print(f"\n   Batch {batch_num}/{total_batches} — profiles {i+1} to {min(i+BATCH_SIZE, total)}")
-        for c in batch:
-            print(f"     → {c['name'][:40]}")
-
-        # Prepare args for each worker
-        args = [(c, COOKIE_FILE, QUICK_SECTIONS) for c in batch]
-
+    for i, c in enumerate(commentor_list, 1):
+        print(f"\n   [{i}/{total}] → {c['name'][:40]}")
         try:
-            with Pool(processes=len(batch)) as pool:
-                # 90 second timeout per batch — kills stuck workers
-                async_result = pool.map_async(_scrape_single_profile, args)
-                try:
-                    batch_results = async_result.get(timeout=90)
-                except Exception:
-                    print(f"    Batch {batch_num} timed out — skipping stuck profiles")
-                    pool.terminate()
-                    # Use empty results for timed-out profiles
-                    batch_results = [(c['id'], {'current_city': None, 'hometown': None,
-                                                'employer': None, 'education': None})
-                                     for c in batch]
-
-            for cid, data in batch_results:
-                results[cid] = data
-
-        except Exception as e:
-            print(f"    Batch {batch_num} failed: {e} — trying sequential fallback")
-            # Sequential fallback with individual timeout
-            for c in batch:
-                try:
-                    cid, data = _scrape_single_profile((c, COOKIE_FILE, QUICK_SECTIONS))
-                    results[cid] = data
-                except Exception as fe:
-                    print(f"      Skipped {c['name'][:30]}: {fe}")
-                    results[c['id']] = {'current_city': None, 'hometown': None,
-                                        'employer': None, 'education': None}
-
-        time.sleep(2)  # brief pause between batches
+            cid, data = _scrape_single_profile((c, COOKIE_FILE, QUICK_SECTIONS))
+            results[cid] = data
+        except Exception as fe:
+            print(f"      Skipped {c['name'][:30]}: {fe}")
+            results[c['id']] = {'current_city': None, 'hometown': None,
+                                'employer': None, 'education': None}
+        time.sleep(random.uniform(2.0, 5.0))
 
     print(f"\n   Scraping complete — {len(results)}/{total} profiles done")
     return results
@@ -443,76 +408,50 @@ def run_country_identification(con, commentor_list, personal_details):
     return country_summary
 
 
-# How many scrape batches to collect before running LLM identification
-LLM_FLUSH_EVERY = 5  # flush after every 5 scrape batches = 15 profiles
+# Flush to LLM every N profiles scraped
+LLM_FLUSH_EVERY = 15  # flush after every 15 profiles
 
 def _scrape_and_identify(con, commentor_list):
     """
-    Interleaved pipeline:
-    - Scrape BATCH_SIZE profiles in parallel
-    - After every LLM_FLUSH_EVERY scrape batches, run LLM and save to DB
+    Sequential interleaved pipeline — one profile at a time to avoid FB rate-limiting
+    a single account with parallel browser sessions.
+
+    - Scrape each profile sequentially
+    - After every LLM_FLUSH_EVERY profiles, run LLM and save to DB
     - UI map and flags update progressively after each flush
     """
-    from multiprocessing import Pool
+    import random
 
     total          = len(commentor_list)
     pending        = {}   # cid -> scraped details, waiting for LLM
-    scrape_batches = 0
+    scraped_count  = 0
 
-    print(f"   Scraping {total} profiles — flushing to LLM every {LLM_FLUSH_EVERY} batches")
+    print(f"   Scraping {total} profiles sequentially — flushing LLM every {LLM_FLUSH_EVERY}")
 
-    for i in range(0, total, BATCH_SIZE):
-        batch     = commentor_list[i:i+BATCH_SIZE]
-        batch_num = i // BATCH_SIZE + 1
-        total_batches = (total + BATCH_SIZE - 1) // BATCH_SIZE
-
-        print(f"\n   Scrape batch {batch_num}/{total_batches}")
-        for c in batch:
-            print(f"     → {c['name'][:40]}")
-
-        args = [(c, COOKIE_FILE, QUICK_SECTIONS) for c in batch]
-
+    for i, c in enumerate(commentor_list, 1):
+        print(f"\n   Profile {i}/{total} → {c['name'][:40]}")
         try:
-            with Pool(processes=len(batch)) as pool:
-                async_result = pool.map_async(_scrape_single_profile, args)
-                try:
-                    batch_results = async_result.get(timeout=90)
-                except Exception:
-                    print(f"    Batch {batch_num} timed out")
-                    pool.terminate()
-                    batch_results = [
-                        (c['commentor_id'], {'current_city': None, 'hometown': None,
-                                             'employer': None, 'education': None})
-                        for c in batch
-                    ]
-            for cid, data in batch_results:
-                pending[cid] = data
+            cid, data = _scrape_single_profile((c, COOKIE_FILE, QUICK_SECTIONS))
+            pending[cid] = data
+        except Exception:
+            pending[c['commentor_id']] = {
+                'current_city': None, 'hometown': None,
+                'employer': None, 'education': None
+            }
 
-        except Exception as e:
-            print(f"    Batch {batch_num} failed: {e}")
-            for c in batch:
-                try:
-                    cid, data = _scrape_single_profile((c, COOKIE_FILE, QUICK_SECTIONS))
-                    pending[cid] = data
-                except Exception:
-                    pending[c['commentor_id']] = {
-                        'current_city': None, 'hometown': None,
-                        'employer': None, 'education': None
-                    }
+        scraped_count += 1
+        time.sleep(random.uniform(2.0, 5.0))
 
-        scrape_batches += 1
-        time.sleep(2)
-
-        # Flush to LLM every LLM_FLUSH_EVERY scrape batches
-        if scrape_batches % LLM_FLUSH_EVERY == 0 or (i + BATCH_SIZE) >= total:
+        # Flush to LLM every LLM_FLUSH_EVERY profiles
+        if scraped_count % LLM_FLUSH_EVERY == 0 or i >= total:
             if pending:
-                print(f"\n  🤖 Running LLM on {len(pending)} pending profiles...")
+                print(f"\n  Running LLM on {len(pending)} pending profiles...")
                 _identify_and_save(con, commentor_list, pending)
-                pending = {}  # clear after flush
+                pending = {}
 
     # Final flush for any remaining
     if pending:
-        print(f"\n  🤖 Final LLM flush — {len(pending)} profiles...")
+        print(f"\n  Final LLM flush — {len(pending)} profiles...")
         _identify_and_save(con, commentor_list, pending)
 
 

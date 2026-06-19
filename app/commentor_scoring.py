@@ -346,7 +346,7 @@ def save_secondary_profile_fields(con, secondary_profile_id, sections):
 
 def scrape_about_for_profile(profile_url):
     """
-    Scrape about sections for a secondary profile using Playwright + GraphQL.
+    Scrape about sections for a secondary profile via FBSession (Scrapling) + GraphQL.
     Returns sections dict or None if failed.
     """
     import re
