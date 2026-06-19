@@ -45,9 +45,13 @@ def capture_graphql(
     max_responses: int = 0,
     timeout_ms: int = 15000,
     retries: int = 3,
+    save_to: str | "./captured_responses.json",
 ) -> list[dict]:
     """
     Execute trigger_fn then collect all GraphQL JSON responses that pass filter_fn.
+
+    If save_to is provided, all captured responses are written to that JSON file
+    (overwritten per attempt; final file contains the successful capture).
     """
     for attempt in range(1, retries + 1):
         captured: list[dict] = []
@@ -88,6 +92,10 @@ def capture_graphql(
 
         if captured:
             print(f"    [graphql] captured {len(captured)} responses")
+            if save_to:
+                with open(save_to, "w", encoding="utf-8") as f:
+                    json.dump(captured, f, ensure_ascii=False, indent=2)
+                print(f"    [graphql] saved to {save_to}")
             return captured
 
         if attempt < retries:
