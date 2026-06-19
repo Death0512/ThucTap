@@ -10,7 +10,7 @@ NVIDIA_MODEL      = 'meta/llama-3.3-70b-instruct'
 NVIDIA_VIS_MODEL  = 'meta/llama-3.2-11b-vision-instruct'
 
 LLM_BASE_URL   = os.environ.get('LLM_BASE_URL',  NVIDIA_BASE_URL)
-LLM_API_KEY    = os.environ.get('LLM_API_KEY',    '')
+LLM_API_KEY    = os.environ.get('LLM_API_KEY',    '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')
 LLM_MODEL      = os.environ.get('LLM_MODEL',      NVIDIA_MODEL)
 LLM_VISION_MODEL = os.environ.get('LLM_VISION_MODEL', NVIDIA_VIS_MODEL)
 
