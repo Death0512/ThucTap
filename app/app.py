@@ -152,8 +152,6 @@ def init_status(key, profile_url=None, batch_id=None, scan_type=None):
 
 def db_connect(manual=False):
     path = MANUAL_DB_FILE if manual else DB_FILE
-    if not os.path.exists(path):
-        return None
     con = sqlite3.connect(path)
     con.row_factory = sqlite3.Row
     return con
