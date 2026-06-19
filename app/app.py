@@ -27,6 +27,197 @@ LLM_MODEL_NAME = llm_client.LLM_MODEL
 os.makedirs(STATUS_DIR, exist_ok=True)
 os.makedirs(REPORTS_DIR, exist_ok=True)
 
+MAIN_SCHEMA = """
+CREATE TABLE IF NOT EXISTS profiles (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    profile_url  TEXT UNIQUE NOT NULL,
+    owner_name   TEXT,
+    is_locked    INTEGER DEFAULT 0,
+    scraped_at   TEXT DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS profile_fields (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    profile_id   INTEGER NOT NULL,
+    section      TEXT, field_type TEXT, label TEXT, value TEXT, sub_label TEXT,
+    FOREIGN KEY (profile_id) REFERENCES profiles(id)
+);
+CREATE TABLE IF NOT EXISTS photo_posts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, profile_id INTEGER NOT NULL,
+    photo_url TEXT UNIQUE NOT NULL, date_text TEXT, image_src TEXT, caption TEXT,
+    scraped_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (profile_id) REFERENCES profiles(id)
+);
+CREATE TABLE IF NOT EXISTS reel_posts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, profile_id INTEGER NOT NULL,
+    reel_url TEXT UNIQUE NOT NULL, scraped_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (profile_id) REFERENCES profiles(id)
+);
+CREATE TABLE IF NOT EXISTS commentors (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, profile_url TEXT UNIQUE NOT NULL, name TEXT
+);
+CREATE TABLE IF NOT EXISTS photo_comments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, photo_post_id INTEGER NOT NULL,
+    commentor_id INTEGER NOT NULL, comment_text TEXT,
+    FOREIGN KEY (photo_post_id) REFERENCES photo_posts(id),
+    FOREIGN KEY (commentor_id) REFERENCES commentors(id),
+    UNIQUE(photo_post_id, commentor_id)
+);
+CREATE TABLE IF NOT EXISTS reel_comments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, reel_post_id INTEGER NOT NULL,
+    commentor_id INTEGER NOT NULL, comment_text TEXT,
+    FOREIGN KEY (reel_post_id) REFERENCES reel_posts(id),
+    FOREIGN KEY (commentor_id) REFERENCES commentors(id),
+    UNIQUE(reel_post_id, commentor_id)
+);
+CREATE TABLE IF NOT EXISTS text_posts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, profile_id INTEGER NOT NULL,
+    post_url TEXT UNIQUE NOT NULL, date_text TEXT, screenshot_path TEXT,
+    scraped_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (profile_id) REFERENCES profiles(id)
+);
+CREATE TABLE IF NOT EXISTS text_comments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, text_post_id INTEGER NOT NULL,
+    commentor_id INTEGER NOT NULL, comment_text TEXT,
+    FOREIGN KEY (text_post_id) REFERENCES text_posts(id),
+    FOREIGN KEY (commentor_id) REFERENCES commentors(id),
+    UNIQUE(text_post_id, commentor_id)
+);
+CREATE TABLE IF NOT EXISTS commentor_scores (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, main_profile_id INTEGER NOT NULL,
+    commentor_id INTEGER NOT NULL, comment_count INTEGER DEFAULT 0,
+    sentiment_score REAL DEFAULT 0.0, emotion_score REAL DEFAULT 0.0,
+    stance_score REAL DEFAULT 0.0, total_score REAL DEFAULT 0.0, tier TEXT,
+    calculated_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (main_profile_id) REFERENCES profiles(id),
+    FOREIGN KEY (commentor_id) REFERENCES commentors(id),
+    UNIQUE(main_profile_id, commentor_id)
+);
+CREATE TABLE IF NOT EXISTS secondary_profiles (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, main_profile_id INTEGER NOT NULL,
+    commentor_id INTEGER NOT NULL, profile_url TEXT NOT NULL, name TEXT,
+    relationship_type TEXT NOT NULL, score REAL DEFAULT 0.0, comment_count INTEGER DEFAULT 0,
+    scraped_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (main_profile_id) REFERENCES profiles(id),
+    FOREIGN KEY (commentor_id) REFERENCES commentors(id),
+    UNIQUE(main_profile_id, commentor_id)
+);
+CREATE TABLE IF NOT EXISTS commentor_country (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, commentor_id INTEGER UNIQUE NOT NULL,
+    current_city TEXT, hometown TEXT, employer TEXT, education TEXT,
+    identified_country TEXT, country_confidence INTEGER DEFAULT 0,
+    identification_basis TEXT, identified_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (commentor_id) REFERENCES commentors(id)
+);
+CREATE TABLE IF NOT EXISTS face_clusters (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, person_label TEXT NOT NULL,
+    representative_face TEXT, appearance_count INTEGER DEFAULT 0, post_ids TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS detected_faces (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, photo_post_id INTEGER NOT NULL,
+    face_index INTEGER DEFAULT 0, face_image_path TEXT, encoding BLOB,
+    person_id INTEGER, detected_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (photo_post_id) REFERENCES photo_posts(id),
+    FOREIGN KEY (person_id) REFERENCES face_clusters(id)
+);
+CREATE TABLE IF NOT EXISTS comment_analysis (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, comment_id INTEGER NOT NULL,
+    db_source TEXT NOT NULL, sentiment TEXT, emotion TEXT, stance TEXT,
+    language TEXT, analyzed_at TEXT DEFAULT (datetime('now')),
+    UNIQUE(comment_id, db_source)
+);
+CREATE TABLE IF NOT EXISTS image_analysis (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, photo_post_id INTEGER UNIQUE NOT NULL,
+    scene_type TEXT, objects TEXT, activity TEXT, crowd_size TEXT,
+    political_symbols TEXT, religious_symbols TEXT, weapons_visible TEXT,
+    cultural_context TEXT, text_in_image TEXT, text_language TEXT, ocr_text TEXT,
+    location_clues TEXT, estimated_location TEXT, confidence INTEGER,
+    analyzed_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (photo_post_id) REFERENCES photo_posts(id)
+);
+CREATE TABLE IF NOT EXISTS text_post_analysis (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, text_post_id INTEGER UNIQUE NOT NULL,
+    extracted_text TEXT, text_language TEXT, topic TEXT, sentiment TEXT,
+    narrative_type TEXT, key_entities TEXT, threat_indicators TEXT,
+    ocr_used INTEGER DEFAULT 1, analyzed_at TEXT DEFAULT (datetime('now'))
+);
+"""
+
+MANUAL_SCHEMA = """
+CREATE TABLE IF NOT EXISTS batches (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, batch_id TEXT UNIQUE NOT NULL,
+    label TEXT, created_at TEXT DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS manual_posts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, batch_id TEXT NOT NULL,
+    url TEXT NOT NULL, type TEXT, date_text TEXT, image_src TEXT,
+    caption TEXT, screenshot_path TEXT, profile_url TEXT,
+    scraped_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (batch_id) REFERENCES batches(batch_id),
+    UNIQUE(batch_id, url)
+);
+CREATE TABLE IF NOT EXISTS commentors (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, profile_url TEXT UNIQUE NOT NULL, name TEXT
+);
+CREATE TABLE IF NOT EXISTS comments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, post_id INTEGER NOT NULL,
+    commentor_id INTEGER NOT NULL, comment_text TEXT,
+    FOREIGN KEY (post_id) REFERENCES manual_posts(id),
+    FOREIGN KEY (commentor_id) REFERENCES commentors(id)
+);
+CREATE TABLE IF NOT EXISTS comment_analysis (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, comment_id INTEGER NOT NULL,
+    db_source TEXT NOT NULL DEFAULT 'manual', sentiment TEXT, emotion TEXT,
+    stance TEXT, language TEXT, analyzed_at TEXT DEFAULT (datetime('now')),
+    UNIQUE(comment_id, db_source)
+);
+CREATE TABLE IF NOT EXISTS batch_commentor_scores (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, batch_id TEXT NOT NULL,
+    commentor_id INTEGER NOT NULL, comment_count INTEGER DEFAULT 0,
+    sentiment_score REAL DEFAULT 0.0, emotion_score REAL DEFAULT 0.0,
+    stance_score REAL DEFAULT 0.0, total_score REAL DEFAULT 0.0, tier TEXT,
+    calculated_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (batch_id) REFERENCES batches(batch_id),
+    FOREIGN KEY (commentor_id) REFERENCES commentors(id),
+    UNIQUE(batch_id, commentor_id)
+);
+CREATE TABLE IF NOT EXISTS commentor_country (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, commentor_id INTEGER UNIQUE NOT NULL,
+    current_city TEXT, hometown TEXT, employer TEXT, education TEXT,
+    identified_country TEXT, country_confidence INTEGER DEFAULT 0,
+    identification_basis TEXT, identified_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (commentor_id) REFERENCES commentors(id)
+);
+CREATE TABLE IF NOT EXISTS secondary_profiles (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, batch_id TEXT NOT NULL,
+    commentor_id INTEGER NOT NULL, profile_url TEXT NOT NULL, name TEXT,
+    relationship_type TEXT NOT NULL, score REAL DEFAULT 0.0, comment_count INTEGER DEFAULT 0,
+    scraped_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (batch_id) REFERENCES batches(batch_id),
+    FOREIGN KEY (commentor_id) REFERENCES commentors(id),
+    UNIQUE(batch_id, commentor_id)
+);
+CREATE TABLE IF NOT EXISTS secondary_profile_fields (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, secondary_profile_id INTEGER NOT NULL,
+    section TEXT, field_type TEXT, label TEXT, value TEXT, sub_label TEXT,
+    FOREIGN KEY (secondary_profile_id) REFERENCES secondary_profiles(id)
+);
+"""
+
+
+def ensure_schema():
+    for path, schema in [(DB_FILE, MAIN_SCHEMA), (MANUAL_DB_FILE, MANUAL_SCHEMA)]:
+        try:
+            con = sqlite3.connect(path)
+            con.executescript(schema)
+            con.commit()
+            con.close()
+        except Exception as e:
+            print(f"  Schema init error ({path}): {e}")
+
+
+ensure_schema()
+
 
 def system_check():
     llm_ok = llm_client.check_llm()
