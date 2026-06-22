@@ -439,3 +439,4 @@ docker-compose up    # Chạy foreground để xem logs
 - Thêm cơ chế đăng nhập thủ công để tự động export cookies và import cookies, cookies cần refresh mỗi 48h
 - Chỉnh sửa lại các prompt cho hợp với nghiệp vụ - `comment_intelligence_offline.py`, `commentor_country.py`, `image_intelligence.py`, `text_post_intelligence.py`
 - Chỉnh sửa lại giao diện và phong cách báo cáo -> nên trình bày theo sơ đồ cây (gia phả) để dễ nắm bắt
+- Cơ chế thu thập của Reels chưa hoàn thiện
